@@ -14,7 +14,12 @@ LTE_Wrapper::LTE_Wrapper()
 
 bool LTE_Wrapper::setup()
 {
-
+    myspi = new MySpiClass();
+    #if ENABLE_DEDICATED_SPI
+    #define SD_CONFIG SdSpiConfig(PIN_NUM_CS, DEDICATED_SPI, SD_SCK_MHZ(50), myspi)
+    #else // ENABLE_DEDICATED_SPI
+    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &mySpi)
+    #endif // ENABLE_DEDICATED_SPI
     while (!modem.enableGPS(true))
     {
         Serial.println(F("Failed to turn on GPS, retrying..."));
@@ -59,7 +64,7 @@ bool LTE_Wrapper::setup()
         else if (cardType == SD_CARD_TYPE_SDHC)
         {
             Serial.println("SDXC");
-            Serial.println("This is the one")
+            Serial.println("This is the one");
         }
         else
         {
@@ -111,7 +116,7 @@ bool LTE_Wrapper::setup()
     }
     */
 
-    type = modem.type();
+    uint8_t type = modem.type();
     Serial.println(F("Modem is OK"));
     Serial.print(F("Found "));
     switch (type)
@@ -179,7 +184,7 @@ bool LTE_Wrapper::publish(const char *topic, const char *content)
 
     if (topic == AUDIO_TOPIC)
     {
-        return this->handleAudioPublish(content)
+        return this->handleAudioPublish(content);
     }
 
     bool published = modem.MQTT_publish(topic, content, strlen(content), 1, 0);
@@ -189,7 +194,7 @@ bool LTE_Wrapper::publish(const char *topic, const char *content)
 bool LTE_Wrapper::handleAudioPublish(const char *filename)
 {
     // Open the audio file on the SD card
-    File audioFile = this->SD.open(filename);
+    FsFile audioFile = this->SD.open(filename);
 
     // Check if the file opened successfully
     if (!audioFile)

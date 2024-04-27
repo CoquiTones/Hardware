@@ -14,6 +14,7 @@ void Microphone::setup()
     #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &mySpi)
     #endif // ENABLE_DEDICATED_SPI
     pinMode(PIN_NUM_CS, OUTPUT);
+    
     digitalWrite(PIN_NUM_CS, LOW);
 
     bool sdBegin = this->SD.cardBegin(SD_CONFIG);
@@ -73,7 +74,7 @@ const char *Microphone::recordToFile(const char *fname)
     unsigned long current_time;
     unsigned long elapsed_time;
 
-    int recordTime = AUDIO_DURATION * 1000; // this is 5 minutes in ms
+    int recordTimeInMs = AUDIO_DURATION_IN_SECONDS * 1000; // this should be 1-2 minutes 
     start_time = millis();
     do
     {
@@ -86,7 +87,7 @@ const char *Microphone::recordToFile(const char *fname)
 
         current_time = millis();
         elapsed_time = current_time - start_time;
-    } while (elapsed_time < recordTime);
+    } while (elapsed_time < recordTimeInMs);
 
     // stop the input
     input->stop();
@@ -113,7 +114,7 @@ int Microphone::takeMeasurement()
     return samples_read;
 }
 
-void Microphone::readFile(const char *fname)
+char* Microphone::readFile(const char *fname)
 {
     // test file creation
     FsFile file = this->SD.open(fname);
@@ -123,8 +124,5 @@ void Microphone::readFile(const char *fname)
     size_t bytes_read = file.read(read_data, 64);
     read_data[bytes_read] = '\0';
 
-    Serial.print("Read ");
-    Serial.print(bytes_read);
-    Serial.print(" bytes, which are as follows: \n\n");
-    Serial.println(read_data);
+    return read_data;
 }

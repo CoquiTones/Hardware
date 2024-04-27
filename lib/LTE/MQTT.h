@@ -38,6 +38,7 @@ private:
     bool handleAudioPublish(const char *filename);
     bool netStatus();
     bool setup();
+    MySpiClass *myspi;
     SdFs SD;
 };
 #endif
