@@ -7,7 +7,12 @@ Microphone::Microphone()
 
 void Microphone::setup()
 {
-
+    myspi = new MySpiClass();
+    #if ENABLE_DEDICATED_SPI
+    #define SD_CONFIG SdSpiConfig(PIN_NUM_CS, DEDICATED_SPI, SD_SCK_MHZ(50), myspi)
+    #else // ENABLE_DEDICATED_SPI
+    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &mySpi)
+    #endif // ENABLE_DEDICATED_SPI
     pinMode(PIN_NUM_CS, OUTPUT);
     digitalWrite(PIN_NUM_CS, LOW);
 
@@ -33,7 +38,7 @@ void Microphone::setup()
     }
     else if (cardType == SD_CARD_TYPE_SDHC)
     {
-        Serial.println("SDHC");
+        Serial.println("SDXC");
     }
     else
     {

@@ -9,7 +9,7 @@
 #define MQTT_SERVER "broker.hivemq.com"
 #define MQTT_PORT 1883
 #define MQTT_USERNAME "PAPADUCK"
-#define MQTT_PASSWORD "HEQIWRmsaer$1235$"
+#define MQTT_PASSWORD "password"
 
 // Set topic names to publish and subscribe to
 #define GPS_TOPIC "location"

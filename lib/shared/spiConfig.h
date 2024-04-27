@@ -1,53 +1,33 @@
 
-
+#include <config.h>
+#include <SPI.h>
+#include <Arduino.h>
+#include <SdFat.h>
 class MySpiClass : public SdSpiBaseClass
 {
 public:
     // Activate SPI hardware with correct speed and mode.
-    void activate() { SPI.beginTransaction(m_spiSettings); }
+    MySpiClass () : SdSpiBaseClass(){ }
+    void activate();
     // Initialize the SPI bus.
-    void begin(SdSpiConfig config)
-    {
-        (void)config;
-        SPI.begin(PIN_NUM_CLK, PIN_NUM_MISO, PIN_NUM_MOSI, -1);
-    }
+    void begin(SdSpiConfig config);
     // Deactivate SPI hardware.
-    void deactivate() { SPI.endTransaction(); }
+    void deactivate();
     // Receive a byte.
-    uint8_t receive() { return SPI.transfer(0XFF); }
+    uint8_t receive();
     // Receive multiple bytes.
     // Replace this function if your board has multiple byte receive.
-    uint8_t receive(uint8_t *buf, size_t count)
-    {
-        for (size_t i = 0; i < count; i++)
-        {
-            buf[i] = SPI.transfer(0XFF);
-        }
-        return 0;
-    }
+    uint8_t receive(uint8_t *buf, size_t count);
     // Send a byte.
-    void send(uint8_t data) { SPI.transfer(data); }
+    void send(uint8_t data) ;
     // Send multiple bytes.
     // Replace this function if your board has multiple byte send.
-    void send(const uint8_t *buf, size_t count)
-    {
-        for (size_t i = 0; i < count; i++)
-        {
-            SPI.transfer(buf[i]);
-        }
-    }
+    void send(const uint8_t *buf, size_t count);
     // Save SPISettings for new max SCK frequency
-    void setSckSpeed(uint32_t maxSck)
-    {
-        m_spiSettings = SPISettings(maxSck, MSBFIRST, SPI_MODE0);
-    }
+    void setSckSpeed(uint32_t maxSck);
 
 private:
     SPISettings m_spiSettings;
-} mySpi;
+};
 
-#if ENABLE_DEDICATED_SPI
-#define SD_CONFIG SdSpiConfig(PIN_NUM_CS, DEDICATED_SPI, SD_SCK_MHZ(50), &mySpi)
-#else // ENABLE_DEDICATED_SPI
-#define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &mySpi)
-#endif // ENABLE_DEDICATED_SPI
+

@@ -13,7 +13,7 @@
 #include <./lib/wav_file/src/WAVFileWriter.h>
 #include <./lib/sd_card/src/SDCard.h>
 #include <../shared/spiConfig.h>
-#include <config.h>
+#include <../shared/config.h>
 
 // chip select pin for sd card: might have to change
 class Microphone
@@ -51,6 +51,7 @@ private:
     void setup();
     I2SSampler *input;
     SdFs SD;
+    MySpiClass *myspi;
 };
 
 #endif
