@@ -2,7 +2,6 @@
 
 #pragma pack(push, 1)
 
-#include <SdFat.h>
 typedef struct _wav_header
 {
   // RIFF Header

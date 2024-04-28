@@ -1,6 +1,6 @@
-#include "WeatherData.h"
+#include "WeatherSensors.h"
 
-WeatherData::WeatherData(int bmeSDA, int bmeSCL, int rainPin)
+WeatherSensors::WeatherSensors(int bmeSDA, int bmeSCL, int rainPin)
 {
 	this->I2CBME.begin(bmeSDA, bmeSCL, 400000);
 	// 0x77 is address for i2c for sensor dont change
@@ -14,40 +14,43 @@ WeatherData::WeatherData(int bmeSDA, int bmeSCL, int rainPin)
 	}
 
 	this->rainPin = rainPin;
-	pinMode(this->rainPin, INPUT);
+	pinMode(this->rainPin, INPUT_PULLUP);
 
 
 };
-
-float WeatherData::getTemperature()
+/***
+ * 
+ * Returns BME280 Sensor Reading of Temperatre in Farenheit
+*/
+float WeatherSensors::getTemperature()
 {
 	//(Celsius * 1.8) + 32 = Farenheit
 	return (this->bme.readTemperature() * 1.8) + 32;
 }
-
-float WeatherData::getPressure()
+//Returns BME280 Sensor Reading of Pressure in hPa
+float WeatherSensors::getPressure()
 {
 	return this->bme.readPressure();
 }
-
-float WeatherData::getHumidity()
+//Returns BME280 Sensor Reading  of Humidity in RH%
+float WeatherSensors::getHumidity()
 {
 	return this->bme.readHumidity();
 }
-
-float WeatherData::getAltitude()
+//Returns BME280 Sensor Reading 
+float WeatherSensors::getAltitude()
 {
 	return this->bme.readAltitude(SEALEVELPRESSURE_HPA);
 }
 
-bool WeatherData::isRaining()
+bool WeatherSensors::isRaining()
 {
 	int rain_state = digitalRead(this->rainPin);
 
 	return rain_state == HIGH;
 }
 
-void WeatherData::printAllValues()
+void WeatherSensors::printAllValues()
 {
 	float temperature = this->bme.readTemperature();
 	float humidity = this->bme.readHumidity();
@@ -65,11 +68,11 @@ void WeatherData::printAllValues()
 	
 }
 
-void WeatherData::sleep()
+void WeatherSensors::sleep()
 {
 	//TODO: close all pin connections and deep sleep
 }
 
-WeatherData::~WeatherData(){
+WeatherSensors::~WeatherSensors(){
 	delete this;
 }

@@ -6,9 +6,9 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BME280.h>
 
-#define SEALEVELPRESSURE_HPA (1013.25)
+#define SEALEVELPRESSURE_HPA 1013.25
 
-class WeatherData
+class WeatherSensors
 {
 
 public:
@@ -20,7 +20,7 @@ public:
      * @param bmeSCL: pin for SCL of bme280 sensor
      * @param rainPin: pin for rain sensor
      */
-    WeatherData(int bmeSDA, int bmeSCL, int rainPin);
+    WeatherSensors(int bmeSDA, int bmeSCL, int rainPin);
 
     /**
      * @brief Prints output of all sensor data to serial console at 9600 baud
@@ -39,7 +39,7 @@ private:
     Adafruit_BME280 bme;
     int rainPin;
 
-    ~WeatherData();
+    ~WeatherSensors();
 };
 
 #endif

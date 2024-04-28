@@ -8,7 +8,7 @@
 #include <CDP.h>
 #include <MemoryFree.h>
 #include <../lib/Microphone/MicWrapper.h>
-#include <../lib/Weather/WeatherData.h>
+#include <../lib/Weather/WeatherSensors.h>
 #include <../lib/Microphone/lib/sd_card/src/SDCard.h>
 
 
@@ -30,7 +30,7 @@ bool runSensor(void *);
 MamaDuck duck;
 DuckDisplay* display;
 Microphone *mic;
-WeatherData *sens;
+WeatherSensors *sens;
 
 // create a timer with default settings
 auto timer = timer_create_default();
@@ -48,7 +48,7 @@ void setup()
 	Serial.begin(115200);
 	Serial.println("Wait ");
 	delay(3000);
-	sens = new WeatherData(bmeSDA, bmeSCL, rainPin);
+	sens = new WeatherSensors(bmeSDA, bmeSCL, rainPin);
 	Serial.print("\nTemp Data: ");
 	Serial.println(sens->getTemperature());
 

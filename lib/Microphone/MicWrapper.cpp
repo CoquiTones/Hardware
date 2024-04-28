@@ -17,36 +17,35 @@ void Microphone::setup()
     
     digitalWrite(PIN_NUM_CS, LOW);
 
-    bool sdBegin = this->SD.cardBegin(SD_CONFIG);
-    if (!sdBegin)
+    while(!this->SD.cardBegin(SD_CONFIG))
     {
         Serial.println("SD card Initializing failed");
         Serial.println("1. is a card inserted?");
         Serial.println("2. is your wiring correct?");
         Serial.println("3. did you change the chipSelect pin to match your shield or module?");
         Serial.println("Note: press reset button on the board and reopen this Serial Monitor after fixing your issue!");
+        uint8_t cardType = this->SD.card()->type();
+        Serial.print("SD Card Type: ");
+        if (cardType == SD_CARD_TYPE_SD1)
+        {
+            Serial.println("SD1");
+        }
+        else if (cardType == SD_CARD_TYPE_SD2)
+        {
+            Serial.println("SD2");
+        }
+        else if (cardType == SD_CARD_TYPE_SDHC)
+        {
+            Serial.println("SDXC");
+        }
+        else
+        {
+            Serial.println("Unknown");
+        }
+
+        delay(1000);
     }
 
-    uint8_t cardType = this->SD.card()->type();
-    Serial.print("SD Card Type: ");
-    if (cardType == SD_CARD_TYPE_SD1)
-    {
-        Serial.println("SD1");
-    }
-    else if (cardType == SD_CARD_TYPE_SD2)
-    {
-        Serial.println("SD2");
-    }
-    else if (cardType == SD_CARD_TYPE_SDHC)
-    {
-        Serial.println("SDXC");
-    }
-    else
-    {
-        Serial.println("Unknown");
-    }
-
-    delay(1000);
     Serial.println("SD CARD CREATED!!!");
     ESP_LOGI(TAG, "Creating microphone");
 #ifdef USE_I2S_MIC_INPUT
