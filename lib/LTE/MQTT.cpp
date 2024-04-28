@@ -14,12 +14,15 @@ LTE_Wrapper::LTE_Wrapper()
 
 bool LTE_Wrapper::setup()
 {
-    myspi = new MySpiClass();
-    #if ENABLE_DEDICATED_SPI
-    #define SD_CONFIG SdSpiConfig(PIN_NUM_CS, DEDICATED_SPI, SD_SCK_MHZ(50), myspi)
-    #else // ENABLE_DEDICATED_SPI
-    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &mySpi)
-    #endif // ENABLE_DEDICATED_SPI
+
+    sd = new SDCARD();
+    bool initialized;
+
+    while(!(initialized = sd->setup())) {
+        Serial.println("ERROR INITIALIZING sd card");
+
+        delay(1000);
+    }
     while (!modem.enableGPS(true))
     {
         Serial.println(F("Failed to turn on GPS, retrying..."));
@@ -49,28 +52,6 @@ bool LTE_Wrapper::setup()
         Serial.println(F("Data already enabled!"));
     }
 
-    while (!this->SD.cardBegin(SD_CONFIG))
-    {
-        uint8_t cardType = this->SD.card()->type();
-        Serial.print("SD Card Type: ");
-        if (cardType == SD_CARD_TYPE_SD1)
-        {
-            Serial.println("SD1");
-        }
-        else if (cardType == SD_CARD_TYPE_SD2)
-        {
-            Serial.println("SD2");
-        }
-        else if (cardType == SD_CARD_TYPE_SDHC)
-        {
-            Serial.println("SDXC");
-            Serial.println("This is the one");
-        }
-        else
-        {
-            Serial.println("Unknown");
-        }
-    }
 
     // SIM7000 takes about 3s to turn on and SIM7500 takes about 15s
     // Press Arduino reset button if the module is still turning on and the board doesn't find it.
@@ -187,8 +168,8 @@ bool LTE_Wrapper::publish(const char *topic, const char *content)
         return this->handleAudioPublish(content);
     }
 
-    bool published = modem.MQTT_publish(topic, content, strlen(content), 1, 0);
-    return published;
+    return modem.MQTT_publish(topic, content, strlen(content), 1, 0);
+
 }
 
 bool LTE_Wrapper::handleAudioPublish(const char *filename)
@@ -229,8 +210,8 @@ bool LTE_Wrapper::handleAudioPublish(const char *filename)
 
     audioFile.close();
     Serial.println(F("Audio publishing completed."));
-    modem.MQTT_publish(AUDIO_TOPIC, END, strlen(END), 1, 0);
-    return true;
+    return modem.MQTT_publish(AUDIO_TOPIC, END, strlen(END), 1, 0);
+
 }
 
 bool LTE_Wrapper::netStatus()

@@ -3,8 +3,7 @@
 
 #include <BotleticsSIM7000.h>
 #include <HardwareSerial.h>
-#include <SdFat.h>
-#include <../shared/spiConfig.h>
+#include <../lib/SD/SDCard.h>
 /************************* MQTT PARAMETERS *********************************/
 #define MQTT_SERVER "broker.hivemq.com"
 #define MQTT_PORT 1883
@@ -38,7 +37,6 @@ private:
     bool handleAudioPublish(const char *filename);
     bool netStatus();
     bool setup();
-    MySpiClass *myspi;
-    SdFs SD;
+    SDCARD *sd;
 };
 #endif

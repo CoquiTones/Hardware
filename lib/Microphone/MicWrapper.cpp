@@ -9,10 +9,12 @@ void Microphone::setup()
 {
 
     sd = new SDCARD();
-    bool initialized = sd->setup();
+    bool initialized;
 
-    if(!initialized) {
+    while(!(initialized = sd->setup())) {
         Serial.println("ERROR INITIALIZING sd card");
+
+        delay(1000);
     }
     ESP_LOGI(TAG, "Creating microphone");
 #ifdef USE_I2S_MIC_INPUT
