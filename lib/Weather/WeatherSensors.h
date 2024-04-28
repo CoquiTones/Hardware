@@ -27,18 +27,36 @@ public:
      *
      */
     void printAllValues();
+
+    /**
+     * @brief returns float of temperature in Farenheit
+    */
     float getTemperature();
+    /**
+     * @brief returns float of pressure in hPa
+    */
     float getPressure();
+    /**
+     * @brief float of relative humidity in RH%
+    */
     float getHumidity();
+    /**
+     * @brief calculates altitude (in meters) based on sea level pressure of PR (1013.25hpa) and measured pressure
+    */
     float getAltitude();
+    /**
+     * @brief returns true if rain sensor measures water
+    */
     bool isRaining();
-    void sleep();
+
 
 private:
     TwoWire I2CBME = TwoWire(0);
     Adafruit_BME280 bme;
     int rainPin;
-
+    /**
+     * @brief close all pin connections
+    */
     ~WeatherSensors();
 };
 

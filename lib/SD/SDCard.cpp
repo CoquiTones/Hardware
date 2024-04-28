@@ -170,9 +170,14 @@ void SDCARD::testFileIO(fs::FS &fs, const char *path) {
   file.close();
 }
 
-File SDCARD::open(const char *fname){
+File SDCARD::open(const char *fname, const char &operation){
 
-  return SD.open(fname, FILE_WRITE);
+  if (operation == 'w'){
+    return SD.open(fname, FILE_WRITE);
+  }
+  else {
+    return SD.open(fname, FILE_READ);
+  }
 }
 
 bool SDCARD::setup() {

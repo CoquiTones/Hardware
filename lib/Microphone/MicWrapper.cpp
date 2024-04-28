@@ -32,8 +32,8 @@ const char *Microphone::recordToFile(const char *fname)
 
     Serial.print("Writing to ");
     Serial.print(fname);
-    File fp = this->sd->open(fname);
-    // create a new wave file writer
+    File fp = this->sd->open(fname, 'w');
+    // create a new wav file writer that writes headers and data appropiately 
     WAVFileWriter *writer = new WAVFileWriter(&fp, input->sample_rate());
 
     unsigned long start_time;
@@ -57,7 +57,7 @@ const char *Microphone::recordToFile(const char *fname)
 
     // stop the input
     input->stop();
-    // and finish the writing
+    // and finish the writing / add the correct tail 
     writer->finish();
     fp.close();
     delete writer;
@@ -82,5 +82,5 @@ int Microphone::takeMeasurement()
 
 char* Microphone::readFile(const char *fname)
 {
-
+    return "fuck";
 }

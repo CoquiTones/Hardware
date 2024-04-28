@@ -18,26 +18,23 @@ WeatherSensors::WeatherSensors(int bmeSDA, int bmeSCL, int rainPin)
 
 
 };
-/***
- * 
- * Returns BME280 Sensor Reading of Temperatre in Farenheit
-*/
+
 float WeatherSensors::getTemperature()
 {
 	//(Celsius * 1.8) + 32 = Farenheit
 	return (this->bme.readTemperature() * 1.8) + 32;
 }
-//Returns BME280 Sensor Reading of Pressure in hPa
+
 float WeatherSensors::getPressure()
 {
 	return this->bme.readPressure();
 }
-//Returns BME280 Sensor Reading  of Humidity in RH%
+
 float WeatherSensors::getHumidity()
 {
 	return this->bme.readHumidity();
 }
-//Returns BME280 Sensor Reading 
+
 float WeatherSensors::getAltitude()
 {
 	return this->bme.readAltitude(SEALEVELPRESSURE_HPA);
@@ -68,11 +65,9 @@ void WeatherSensors::printAllValues()
 	
 }
 
-void WeatherSensors::sleep()
-{
-	//TODO: close all pin connections and deep sleep
-}
+
 
 WeatherSensors::~WeatherSensors(){
+	
 	delete this;
 }
