@@ -114,10 +114,12 @@ bool runSensor(void *)
 	#endif
 	mic->recordToFile("test.wav");
 	char *read_data = mic->readFile("test.wav");
+
 	#ifdef DEBUG_MAMA
 	display->clearLine(10, 3);
 	display->drawString(10, 3, "Finished!");
 	#endif
+	
 	Serial.println(read_data);
 	delay(3000);
 	bool result;
