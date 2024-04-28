@@ -2,7 +2,7 @@
 
 static const char *TAG = "WAV";
 
-WAVFileWriter::WAVFileWriter(FsFile *fp, int sample_rate)
+WAVFileWriter::WAVFileWriter(File *fp, int sample_rate)
 {
   m_fp = fp;
   m_header.sample_rate = sample_rate;

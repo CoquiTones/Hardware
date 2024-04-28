@@ -1,5 +1,4 @@
 #pragma once
-
 #pragma pack(push, 1)
 
 typedef struct _wav_header

@@ -9,7 +9,6 @@
 #include <MemoryFree.h>
 #include <../lib/Microphone/MicWrapper.h>
 #include <../lib/Weather/WeatherSensors.h>
-#include <../lib/Microphone/lib/sd_card/src/SDCard.h>
 
 
 #ifdef SERIAL_PORT_USBVIRTUAL

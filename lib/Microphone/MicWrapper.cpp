@@ -7,46 +7,13 @@ Microphone::Microphone()
 
 void Microphone::setup()
 {
-    myspi = new MySpiClass();
-    #if ENABLE_DEDICATED_SPI
-    #define SD_CONFIG SdSpiConfig(PIN_NUM_CS, DEDICATED_SPI, SD_SCK_MHZ(50), myspi)
-    #else // ENABLE_DEDICATED_SPI
-    #define SD_CONFIG SdSpiConfig(SD_CS_PIN, SHARED_SPI, SD_SCK_MHZ(50), &mySpi)
-    #endif // ENABLE_DEDICATED_SPI
-    pinMode(PIN_NUM_CS, OUTPUT);
-    
-    digitalWrite(PIN_NUM_CS, LOW);
 
-    while(!this->SD.cardBegin(SD_CONFIG))
-    {
-        Serial.println("SD card Initializing failed");
-        Serial.println("1. is a card inserted?");
-        Serial.println("2. is your wiring correct?");
-        Serial.println("3. did you change the chipSelect pin to match your shield or module?");
-        Serial.println("Note: press reset button on the board and reopen this Serial Monitor after fixing your issue!");
-        uint8_t cardType = this->SD.card()->type();
-        Serial.print("SD Card Type: ");
-        if (cardType == SD_CARD_TYPE_SD1)
-        {
-            Serial.println("SD1");
-        }
-        else if (cardType == SD_CARD_TYPE_SD2)
-        {
-            Serial.println("SD2");
-        }
-        else if (cardType == SD_CARD_TYPE_SDHC)
-        {
-            Serial.println("SDXC");
-        }
-        else
-        {
-            Serial.println("Unknown");
-        }
+    sd = new SDCARD();
+    bool initialized = sd->setup();
 
-        delay(1000);
+    if(!initialized) {
+        Serial.println("ERROR INITIALIZING sd card");
     }
-
-    Serial.println("SD CARD CREATED!!!");
     ESP_LOGI(TAG, "Creating microphone");
 #ifdef USE_I2S_MIC_INPUT
     this->input = new I2SMEMSSampler(I2S_NUM_0, i2s_mic_pins, i2s_mic_Config);
@@ -65,7 +32,7 @@ const char *Microphone::recordToFile(const char *fname)
 
     Serial.print("Writing to ");
     Serial.print(fname);
-    FsFile fp = this->SD.open(fname, O_CREAT | O_RDWR);
+    File fp = this->sd->open(fname);
     // create a new wave file writer
     WAVFileWriter *writer = new WAVFileWriter(&fp, input->sample_rate());
 
@@ -115,13 +82,5 @@ int Microphone::takeMeasurement()
 
 char* Microphone::readFile(const char *fname)
 {
-    // test file creation
-    FsFile file = this->SD.open(fname);
 
-    // Read some of the data back, an null terminate it to make it a valid str
-    char read_data[65];
-    size_t bytes_read = file.read(read_data, 64);
-    read_data[bytes_read] = '\0';
-
-    return read_data;
 }

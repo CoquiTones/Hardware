@@ -3,7 +3,7 @@
 
 static const char *TAG = "WAV";
 
-WAVFileReader::WAVFileReader(FsFile *file) // Change the constructor parameter to FsFile*
+WAVFileReader::WAVFileReader(File *file) // Change the constructor parameter to FsFile*
 {
     m_fp = file; // Change m_fp to m_file
     // read the WAV header

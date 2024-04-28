@@ -33,10 +33,10 @@
 // Analog Microphone Settings - ADC1_CHANNEL_7 is GPIO35
 #define ADC_MIC_CHANNEL ADC1_CHANNEL_7
 
-#define PIN_NUM_CS GPIO_NUM_36
-#define PIN_NUM_CLK GPIO_NUM_5
-#define PIN_NUM_MOSI GPIO_NUM_34
-#define PIN_NUM_MISO GPIO_NUM_19
+#define PIN_NUM_CS GPIO_NUM_7
+#define PIN_NUM_CLK GPIO_NUM_4
+#define PIN_NUM_MOSI GPIO_NUM_6
+#define PIN_NUM_MISO GPIO_NUM_5
 
 // i2s config for using the internal ADC
 extern i2s_config_t i2s_adc_config;
