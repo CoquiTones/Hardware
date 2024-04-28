@@ -175,7 +175,7 @@ bool LTE_Wrapper::publish(const char *topic, const char *content)
 bool LTE_Wrapper::handleAudioPublish(const char *filename)
 {
     // Open the audio file on the SD card
-    File audioFile = this->SD.open(filename);
+    File audioFile = this->sd->open(filename, 'r');
 
     // Check if the file opened successfully
     if (!audioFile)
