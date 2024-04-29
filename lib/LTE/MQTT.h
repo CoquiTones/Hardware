@@ -3,7 +3,7 @@
 
 #include <BotleticsSIM7000.h>
 #include <HardwareSerial.h>
-#include <../lib/SD/SDCard.h>
+#include <../SD/SDCard.h>
 /************************* MQTT PARAMETERS *********************************/
 #define MQTT_SERVER "broker.hivemq.com"
 #define MQTT_PORT 1883
@@ -29,13 +29,31 @@ HardwareSerial modemSS(1);
 class LTE_Wrapper
 {
 public:
+    /**
+     * @brief Create a new wrapper object for the Botletics 7000 LTE shield for handling MQTT uplink of duck
+    */
     LTE_Wrapper();
+    /**
+     * @brief Publishes String content to topic
+     * @param topic [GPS_TOPIC, WEATHER_TOPIC, AUDIO_TOPIC]: topic to publish to 
+     * @param content String with content; for AUDIO encoded string of audio file 
+    */
     bool publish(const char *topic, const char *content);
     Botletics_modem_LTE modem = Botletics_modem_LTE();
 
 private:
-    bool handleAudioPublish(const char *filename);
+    /**
+     * @brief Handles Audio Publishing
+     * @param filepath: filepath of recorded wav file 
+    */
+    bool handleAudioPublish(const char *filepath);
+    /**
+     * @brief Returns network status of sim. Example output: "Registered roaming"
+    */
     bool netStatus();
+    /**
+     * @brief setup all components for LTE wrapper including modem object, and SD card
+    */
     bool setup();
     SDCARD *sd;
 };

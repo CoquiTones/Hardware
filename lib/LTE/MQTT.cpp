@@ -2,18 +2,18 @@
 
 LTE_Wrapper::LTE_Wrapper()
 {
-    pinMode(RST, OUTPUT);
-    digitalWrite(RST, HIGH); // Default state
 
-    modem.powerOn(PWRKEY); // Power on the module       // Establishes first-time serial comm and prints IMEI
     this->setup();
-    // Set modem to full functionality
-    modem.setFunctionality(1); // AT+CFUN=1
-    modem.setNetworkSettings(F(APN));
+
 }
 
 bool LTE_Wrapper::setup()
 {
+
+    pinMode(RST, OUTPUT);
+    digitalWrite(RST, HIGH); // Default state
+
+    modem.powerOn(PWRKEY); // Power on the module       // Establishes first-time serial comm and prints IMEI
 
     sd = new SDCARD();
     bool initialized;
@@ -23,6 +23,7 @@ bool LTE_Wrapper::setup()
 
         delay(1000);
     }
+
     while (!modem.enableGPS(true))
     {
         Serial.println(F("Failed to turn on GPS, retrying..."));
@@ -60,25 +61,7 @@ bool LTE_Wrapper::setup()
     // Software serial:
     modemSS.begin(115200); // Default SIM7000 shield baud rate
 
-    Serial.println(F("Configuring to 9600 baud"));
-    modemSS.println("AT+IPR=9600"); // Set baud rate
-    delay(100);                     // Short pause to let the command run
-    modemSS.begin(9600);
-    if (!modem.begin(modemSS))
-    {
-        Serial.println(F("Couldn't find modem"));
-        while (1)
-            ; // Don't proceed if it couldn't find the device
-    }
 
-    // Hardware serial:
-    /*
-    modemSerial->begin(115200); // Default SIM7000 baud rate
-
-    if (! modem.begin(*modemSerial)) {
-      DEBUG_PRINTLN(F("Couldn't find SIM7000"));
-    }
-    */
 
     // The commented block of code below is an alternative that will find the module at 115200
     // Then switch it to 9600 without having to wait for the module to turn on and manually
@@ -136,6 +119,11 @@ bool LTE_Wrapper::setup()
         Serial.println(F("???"));
         break;
     }
+    
+
+        // Set modem to full functionality
+    modem.setFunctionality(1); // AT+CFUN=1
+    modem.setNetworkSettings(F(APN));
 
     return true;
 }
@@ -172,10 +160,10 @@ bool LTE_Wrapper::publish(const char *topic, const char *content)
 
 }
 
-bool LTE_Wrapper::handleAudioPublish(const char *filename)
+bool LTE_Wrapper::handleAudioPublish(const char *filepath)
 {
     // Open the audio file on the SD card
-    File audioFile = this->sd->open(filename, 'r');
+    File audioFile = this->sd->open(filepath, 'r');
 
     // Check if the file opened successfully
     if (!audioFile)

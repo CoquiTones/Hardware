@@ -40,22 +40,13 @@ int counter = 1;
 bool setupOK = false;
 void setup()
 {
+	Serial.begin(115200);
 	// We are using a hardcoded device id here, but it should be retrieved or
 	// given during the device provisioning then converted to a byte vector to
 	// setup the duck NOTE: The Device ID must be exactly 8 bytes otherwise it
 	// will get rejected
-	Serial.begin(115200);
-	Serial.println("Wait ");
-	delay(3000);
-	sens = new WeatherSensors(bmeSDA, bmeSCL, rainPin);
-	Serial.print("\nTemp Data: ");
-	Serial.println(sens->getTemperature());
-
-	mic = new Microphone();
-	Serial.println("Microphone Created");
-	Serial.println("Weather Data Object Created");
-
 	// has to be 8 chars
+
 	std::string deviceId("MAMA0001");
 	std::vector<byte> devId;
 	devId.insert(devId.end(), deviceId.begin(), deviceId.end());
@@ -66,17 +57,25 @@ void setup()
 	}
 
 	#ifdef DEBUG_MAMA
-
-	display = DuckDisplay::getInstance();
-	display->setupDisplay(duck.getType(), devId);
-	display->showDefaultScreen();
-
+		display = DuckDisplay::getInstance();
+		display->setupDisplay(duck.getType(), devId);
+		display->showDefaultScreen();
 	#endif
+
 	setupOK = true;
 	// Initialize the timer. The timer thread runs separately from the main loop
 	// and will trigger sending a counter message.
 	timer.every(INTERVAL_MS, runSensor);
 	Serial.println("[MAMA] Setup OK!");
+
+	sens = new WeatherSensors(bmeSDA, bmeSCL, rainPin);
+	Serial.print("\nTemp Data: ");
+	Serial.println(sens->getTemperature());
+
+	mic = new Microphone();
+	Serial.println("Microphone Created");
+	Serial.println("Weather Data Object Created");
+
 }
 
 std::vector<byte> stringToByteVector(const String &str)
@@ -119,7 +118,7 @@ bool runSensor(void *)
 	display->clearLine(10, 3);
 	display->drawString(10, 3, "Finished!");
 	#endif
-	
+
 	Serial.println(read_data);
 	delay(3000);
 	bool result;

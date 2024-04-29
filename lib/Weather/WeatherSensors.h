@@ -23,7 +23,7 @@ public:
     WeatherSensors(int bmeSDA, int bmeSCL, int rainPin);
 
     /**
-     * @brief Prints output of all sensor data to serial console at 9600 baud
+     * @brief Prints output of all sensor data to serial console 
      *
      */
     void printAllValues();
