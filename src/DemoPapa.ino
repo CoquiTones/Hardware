@@ -135,6 +135,12 @@ int toJSON(CdpPacket packet)
     Serial.println("[PAPA] hops:    " + String(packet.hopCount));
     Serial.println("[PAPA] duck:    " + String(packet.duckType));
 
+    #ifdef DEBUG_PAPA
+    display->clear();
+    display->drawString(0, 10, "Received Mama Data!!");
+    display->drawString(0, 30, payload.c_str());
+    #endif
+
     doc["DeviceId"] = sduid;
     doc["topic"].set(toTopicString(packet.topic));
     doc["MessageId"] = muid;

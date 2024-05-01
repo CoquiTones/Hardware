@@ -14,9 +14,7 @@ WeatherSensors::WeatherSensors(int bmeSDA, int bmeSCL, int rainPin)
 	}
 
 	this->rainPin = rainPin;
-	pinMode(this->rainPin, INPUT_PULLUP);
-
-
+	pinMode(this->rainPin, INPUT_PULLDOWN);
 };
 
 float WeatherSensors::getTemperature()
@@ -53,7 +51,7 @@ void WeatherSensors::printAllValues()
 	float humidity = this->bme.readHumidity();
 	float Altitude = this->bme.readAltitude(SEALEVELPRESSURE_HPA);
 	float pressure = this->bme.readPressure();
-	
+
 	bool isRaining = this->isRaining();
 
 	Serial.println("Temperature: " + String(temperature));
@@ -61,13 +59,10 @@ void WeatherSensors::printAllValues()
 	Serial.println("Altitude: " + String(Altitude));
 	Serial.println("Pressure: " + String(pressure));
 	Serial.println("is Raining: " + String(isRaining));
-
-	
 }
 
+WeatherSensors::~WeatherSensors()
+{
 
-
-WeatherSensors::~WeatherSensors(){
-	
 	delete this;
 }
