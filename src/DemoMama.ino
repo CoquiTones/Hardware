@@ -27,7 +27,6 @@ bool runSensor(void *);
 MamaDuck duck;
 DuckDisplay *display;
 WeatherSensors *sens;
-
 // create a timer with default settings
 auto timer = timer_create_default();
 
@@ -109,7 +108,7 @@ bool runSensor(void *)
     String israining = sens->isRaining() ? "Yes" : "No";
 
     // String message = "Temperature: " + temp + "*C\n" + "Pressure : " + pres + "hPa\n" + "Humidity: " + humid + "RH%\n" + "Raining: " + israining + "\n";
-    String message = "Temperature: " + temp + "*F\n" + "Pressure : " + pres + "hPa\n" + "Humidity: " + humid + "RH%\n" + "Raining: " + israining + "\n";
+    String message = "Temp: " + temp + "*F" + "Pres: " + pres + "hPa" + "Humid: " + humid + "RH%\n" + "Raining: " + israining ;
     int length = message.length();
 
 #ifdef DEBUG_MAMA
@@ -118,7 +117,7 @@ bool runSensor(void *)
     display->drawString(0, 20, (String("Temp: ") + temp + "*F").c_str());
     display->drawString(0, 30, (String("Pres: ") + pres + "hPa").c_str());
     display->drawString(0, 40, (String("Humidity: ") + humid + "RH%").c_str());
-    display->drawString(0, 50, (String("isRaining: ") + israining).c_str());
+    display->drawString(0, 50, (String("Raining: ") + israining).c_str());
     display->sendBuffer();
 #endif
     Serial.print("[MAMA] sensor data: ");

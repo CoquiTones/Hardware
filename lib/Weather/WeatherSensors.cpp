@@ -14,7 +14,7 @@ WeatherSensors::WeatherSensors(int bmeSDA, int bmeSCL, int rainPin)
 	}
 
 	this->rainPin = rainPin;
-	pinMode(this->rainPin, INPUT_PULLDOWN);
+	pinMode(this->rainPin, INPUT);
 };
 
 float WeatherSensors::getTemperature()
@@ -41,8 +41,8 @@ float WeatherSensors::getAltitude()
 bool WeatherSensors::isRaining()
 {
 	int rain_state = digitalRead(this->rainPin);
-
-	return rain_state == HIGH;
+	Serial.println("Rain sensor state: " + String(rain_state)); // Add this line for debugging
+	return !(rain_state == HIGH);
 }
 
 void WeatherSensors::printAllValues()

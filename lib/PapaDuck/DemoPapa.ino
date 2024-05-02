@@ -137,8 +137,19 @@ int toJSON(CdpPacket packet)
 
     #ifdef DEBUG_PAPA
     display->clear();
-    display->drawString(0, 10, "Received Mama Data!!");
-    display->drawString(0, 30, payload.c_str());
+    String message = String(payload.c_str());
+    // Find the index of key strings
+    int tempIndex = message.indexOf("Temp:");
+    int presIndex = message.indexOf("Pres:");
+    int humidIndex = message.indexOf("Humid:");
+    int rainingIndex = message.indexOf("Raining:");
+
+    display->drawString(0, 10, String("Received from Mama!!").c_str());
+    display->drawString(0, 20, message.substring(tempIndex, message.indexOf("*F", tempIndex) + 2).c_str());
+    display->drawString(0, 30, message.substring(presIndex , message.indexOf("hPa", presIndex) + 3).c_str());
+    display->drawString(0, 40, message.substring(humidIndex , message.indexOf("RH%", humidIndex) + 3).c_str());
+    display->drawString(0, 50, message.substring(rainingIndex).c_str());
+    display->sendBuffer();
     #endif
 
     doc["DeviceId"] = sduid;
