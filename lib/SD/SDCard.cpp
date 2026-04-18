@@ -19,34 +19,39 @@
  *                  |                                  █/
  *                  |__▍___▊___█___█___█___█___█___█___/
  *
- * Note:  The SPI pins can be manually configured by using `SPI.begin(sck, miso, mosi, cs).`
- *        Alternatively, you can change the CS pin and use the other default settings by using `SD.begin(cs)`.
+ * Note:  The SPI pins can be manually configured by using `SPI.begin(sck, miso,
+ * mosi, cs).` Alternatively, you can change the CS pin and use the other
+ * default settings by using `SD.begin(cs)`.
  *
  * +--------------+---------+-------+----------+----------+----------+----------+----------+
- * | SPI Pin Name | ESP8266 | ESP32 | ESP32‑S2 | ESP32‑S3 | ESP32‑C3 | ESP32‑C6 | ESP32‑H2 |
+ * | SPI Pin Name | ESP8266 | ESP32 | ESP32‑S2 | ESP32‑S3 | ESP32‑C3 | ESP32‑C6
+ * | ESP32‑H2 |
  * +==============+=========+=======+==========+==========+==========+==========+==========+
- * | CS (SS)      | GPIO15  | GPIO5 | GPIO34   | GPIO10   | GPIO7    | GPIO18   | GPIO0    |
+ * | CS (SS)      | GPIO15  | GPIO5 | GPIO34   | GPIO10   | GPIO7    | GPIO18 |
+ * GPIO0    |
  * +--------------+---------+-------+----------+----------+----------+----------+----------+
- * | DI (MOSI)    | GPIO13  | GPIO23| GPIO35   | GPIO11   | GPIO6    | GPIO19   | GPIO25   |
+ * | DI (MOSI)    | GPIO13  | GPIO23| GPIO35   | GPIO11   | GPIO6    | GPIO19 |
+ * GPIO25   |
  * +--------------+---------+-------+----------+----------+----------+----------+----------+
- * | DO (MISO)    | GPIO12  | GPIO19| GPIO37   | GPIO13   | GPIO5    | GPIO20   | GPIO11   |
+ * | DO (MISO)    | GPIO12  | GPIO19| GPIO37   | GPIO13   | GPIO5    | GPIO20 |
+ * GPIO11   |
  * +--------------+---------+-------+----------+----------+----------+----------+----------+
- * | SCK (SCLK)   | GPIO14  | GPIO18| GPIO36   | GPIO12   | GPIO4    | GPIO21   | GPIO10   |
+ * | SCK (SCLK)   | GPIO14  | GPIO18| GPIO36   | GPIO12   | GPIO4    | GPIO21 |
+ * GPIO10   |
  * +--------------+---------+-------+----------+----------+----------+----------+----------+
  *
  * For more info see file README.md in this library or on URL:
  * https://github.com/espressif/arduino-esp32/tree/master/libraries/SD
  */
 
-#include <SDCard.h>
+#include "SDCard.h"
 
-//Uncomment and set up if you want to use custom pins for the SPI communication
-#define REASSIGN_PINS 
+// Uncomment and set up if you want to use custom pins for the SPI communication
+#define REASSIGN_PINS
 int sck = PIN_NUM_CLK;
 int miso = PIN_NUM_MISO;
 int mosi = PIN_NUM_MOSI;
 int cs = PIN_NUM_CS;
-
 
 void SDCARD::listDir(fs::FS &fs, const char *dirname, uint8_t levels) {
   Serial.printf("Listing directory: %s\n", dirname);
@@ -170,12 +175,11 @@ void SDCARD::testFileIO(fs::FS &fs, const char *path) {
   file.close();
 }
 
-File SDCARD::open(const char *fname, const char &operation){
+File SDCARD::open(const char *fname, const char &operation) {
 
-  if (operation == 'w'){
+  if (operation == 'w') {
     return SD.open(fname, FILE_WRITE);
-  }
-  else {
+  } else {
     return SD.open(fname, FILE_READ);
   }
 }
@@ -186,13 +190,11 @@ bool SDCARD::setup() {
     delay(10);
   }
 
-#ifdef REASSIGN_PINS
   SPI.begin(sck, miso, mosi, cs);
   bool success;
   if (!(success = SD.begin(cs))) {
-#endif
-    Serial.println("Card Mount Failed");
-      uint8_t cardType = SD.cardType();
+    Serial.println("Puneta: Card Mount Failed");
+    uint8_t cardType = SD.cardType();
 
     if (cardType == CARD_NONE) {
       Serial.println("No SD card attached");
@@ -230,20 +232,4 @@ bool SDCARD::setup() {
   Serial.printf("SD Card Size: %lluMB\n", cardSize);
 
   return success;
-  // listDir(SD, "/", 0);
-  // createDir(SD, "/mydir");
-  // listDir(SD, "/", 0);
-  // removeDir(SD, "/mydir");
-  // listDir(SD, "/", 2);
-  // writeFile(SD, "/hello.txt", "Hello ");
-  // appendFile(SD, "/hello.txt", "World!\n");
-  // readFile(SD, "/hello.txt");
-  // deleteFile(SD, "/foo.txt");
-  // renameFile(SD, "/hello.txt", "/foo.txt");
-  // readFile(SD, "/foo.txt");
-  // testFileIO(SD, "/test.txt");
-  // Serial.printf("Total space: %lluMB\n", SD.totalBytes() / (1024 * 1024));
-  // Serial.printf("Used space: %lluMB\n", SD.usedBytes() / (1024 * 1024));
 }
-
-// void loop() {}
