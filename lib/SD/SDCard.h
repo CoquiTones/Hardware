@@ -1,7 +1,7 @@
-#ifndef SDCard
-#define SDCard
+#ifndef SDCard_H
+#define SDCard_H
 
-#include <../shared/config.h>
+#include "../shared/config.h"
 #include <FS.h>
 #include <SD.h>
 #include <SPI.h>
