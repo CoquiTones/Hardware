@@ -1,13 +1,17 @@
 #ifndef SDCard_H
 #define SDCard_H
 
-#include "../shared/config.h"
 #include <FS.h>
 #include <SD.h>
 
 class SDCARD {
 public:
-  SDCARD() {};
+  SDCARD(int pin_cs, int pin_sclk, int pin_mosi, int pin_miso) {
+    this->pin_cs = pin_cs;
+    this->pin_sclk = pin_sclk;
+    this->pin_mosi = pin_mosi;
+    this->pin_miso = pin_miso;
+  };
   /**
    * @brief Open a file for reading or writing; operation should be either w or
    * r
@@ -68,6 +72,12 @@ public:
    * Performs setup tasks,  initializes the SD card.
    */
   bool setup();
+
+private:
+  int pin_cs;
+  int pin_sclk;
+  int pin_miso;
+  int pin_mosi;
 };
 
 #endif

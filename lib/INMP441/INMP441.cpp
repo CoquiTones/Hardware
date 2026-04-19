@@ -1,8 +1,8 @@
 #include "INMP441.h"
 
-INMP441::INMP441()
-    : wav_buffer(nullptr), wav_size(0), sample_rate(SAMPLE_RATE),
-      is_initialized(false) {}
+INMP441::INMP441(int pin_sck, int pin_ws, int pin_din)
+    : pin_sck(pin_sck), pin_ws(pin_ws), pin_din(pin_din), wav_buffer(nullptr),
+      wav_size(0), sample_rate(SAMPLE_RATE), is_initialized(false) {}
 
 INMP441::~INMP441() {
   clearBuffer();
@@ -39,10 +39,10 @@ bool INMP441::begin(uint32_t sr) {
 
   // Set pins
   i2s_pin_config_t pin_config = {.mck_io_num = -1,
-                                 .bck_io_num = I2S_SCK_PIN,
-                                 .ws_io_num = I2S_WS_PIN,
+                                 .bck_io_num = pin_sck,
+                                 .ws_io_num = pin_ws,
                                  .data_out_num = -1,
-                                 .data_in_num = I2S_DIN_PIN};
+                                 .data_in_num = pin_din};
 
   if (i2s_set_pin(I2S_NUM, &pin_config) != ESP_OK) {
     Serial.println("I2S set pins failed!");

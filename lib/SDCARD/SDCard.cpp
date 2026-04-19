@@ -1,10 +1,5 @@
 #include "SDCard.h"
 
-int sck = PIN_NUM_CLK;
-int miso = PIN_NUM_MISO;
-int mosi = PIN_NUM_MOSI;
-int cs = PIN_NUM_CS;
-
 void SDCARD::listDir(fs::FS &fs, const char *dirname, uint8_t levels) {
   Serial.printf("Listing directory: %s\n", dirname);
 
@@ -166,9 +161,9 @@ bool SDCARD::setup() {
     delay(10);
   }
 
-  SPI.begin(sck, miso, mosi, cs);
+  SPI.begin(pin_sclk, pin_miso, pin_mosi, pin_cs);
   bool success;
-  if (!(success = SD.begin(cs))) {
+  if (!(success = SD.begin(pin_cs))) {
     Serial.println("Puneta: Card Mount Failed");
     uint8_t cardType = SD.cardType();
 

@@ -7,9 +7,7 @@
 #include <driver/i2s.h>
 
 #define I2S_NUM I2S_NUM_0
-#define I2S_SCK_PIN 41
-#define I2S_WS_PIN 42
-#define I2S_DIN_PIN 2
+
 #define SAMPLE_RATE 16000
 #define BUFFER_SIZE 4096
 #define BITS_PER_SAMPLE 32
@@ -17,7 +15,7 @@
 
 class INMP441 {
 public:
-  INMP441();
+  INMP441(int pin_sck, int pin_ws, int pin_din);
   ~INMP441();
 
   bool begin(uint32_t sample_rate = SAMPLE_RATE);
@@ -35,6 +33,9 @@ public:
   uint8_t *getPCMBuffer() const { return wav_buffer; }
 
 private:
+  int pin_sck;
+  int pin_ws;
+  int pin_din;
   uint8_t *wav_buffer;
   size_t wav_size;
   uint32_t sample_rate;

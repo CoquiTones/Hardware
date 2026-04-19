@@ -4,8 +4,8 @@
 #include "SDCard.h"
 
 // Create instances
-SDCARD sdCard;
-INMP441 microphoneHW;
+SDCARD sdCard(4,5,6,7);
+INMP441 microphoneHW(19, 20, 47);
 Microphone microphone(sdCard, microphoneHW);
 
 void setup() {
