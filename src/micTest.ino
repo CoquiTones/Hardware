@@ -3,9 +3,19 @@
 #include "Microphone.h"
 #include "SDCard.h"
 
+
+#define SD_PIN_CS 4
+#define SD_PIN_SCLK 5
+#define SD_PIN_MOSI 6
+#define SD_PIN_MISO 7
+
+#define MIC_PIN_SCK 19
+#define MIC_PIN_WS 20
+#define MIC_PIN_DIN 47
+
 // Create instances
-SDCARD sdCard(4,5,6,7);
-INMP441 microphoneHW(19, 20, 47);
+SDCARD sdCard(SD_PIN_CS, SD_PIN_SCLK, SD_PIN_MOSI, SD_PIN_MISO);
+INMP441 microphoneHW(MIC_PIN_SCK, MIC_PIN_WS, MIC_PIN_DIN);
 Microphone microphone(sdCard, microphoneHW);
 
 void setup() {
