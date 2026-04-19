@@ -4,7 +4,6 @@
 #include "../shared/config.h"
 #include <FS.h>
 #include <SD.h>
-#include <SPI.h>
 
 class SDCARD {
 public:
@@ -61,6 +60,9 @@ public:
    * @param path The path of the file to perform I/O operations on.
    */
   void testFileIO(fs::FS &fs, const char *path);
+
+  // In SDCard.h - add to public methods:
+  bool appendToFile(fs::FS &fs, const char *path, uint8_t *data, size_t size);
 
   /**
    * Performs setup tasks,  initializes the SD card.

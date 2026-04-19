@@ -1,0 +1,12 @@
+{
+    "name": "INMP441",
+    "version": "1.0.0",
+    "description": "INMP441 I2S Microphone Driver",
+    "authors": [
+        {
+            "name": "Your Name"
+        }
+    ],
+    "frameworks": "arduino",
+    "platforms": "*"
+}

@@ -6,8 +6,8 @@
 #include <hal/i2s_types.h>
 
 // sample rate for the system
-#define SAMPLE_RATE 44000           // HZ
-#define AUDIO_DURATION_IN_SECONDS 5 // SECONDS
+// #define AUDIO_DURATION_IN_SECONDS 5 // SECONDS
+#define SAMPLE_RATE 16000
 
 // save to SPIFFS instead of SD Card?
 // #define USE_SPIFFS 1

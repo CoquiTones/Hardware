@@ -1,188 +1,138 @@
 #include "Microphone.h"
-#include "config.h"
-#include "lib/INMP441.h"
-#include "lib/PSRAMBuffer.h"
 
 // Constructor
-Microphone::Microphone() : sd_initialized(false) { setupSDCard(); }
+Microphone::Microphone(SDCARD &sd, INMP441 &mic)
+    : sd(sd), mic(mic), sd_initialized(false) {}
 
 // Destructor
 Microphone::~Microphone() {
-  // SD library cleanup (automatic on end scope)
-  SD->end();
+  // Resources managed by singleton instances
 }
 
-// Record 5 minutes of audio to file
-const char *Microphone::recordToFile(const char *fname) {
-  // Verify SD card is ready
+// Setup SD card and microphone
+void Microphone::initialize() {
+  sd_initialized = sd.setup();
+
   if (!sd_initialized) {
-    Serial.println("SD card not initialized!");
-    return nullptr;
+    Serial.println("SD card initialization failed!");
+    return;
   }
 
-  // Calculate required PSRAM size for 5 minutes
-  // Formula: sample_rate (Hz) × duration (sec) × sample_size (bytes)
-  const size_t recording_duration_seconds = 300; // 5 minutes
-  size_t required_psram_bytes =
-      I2S_SAMPLE_RATE * recording_duration_seconds * I2S_SAMPLE_SIZE;
-
-  Serial.printf("Allocating PSRAM: %u bytes for 5-minute recording\n",
-                (unsigned)required_psram_bytes);
-
-  if (!buffer->init(required_psram_bytes)) {
-    Serial.println("Failed to allocate PSRAM - not enough memory!");
-    return nullptr;
+  // Initialize microphone with 16kHz sample rate
+  if (!mic.begin(16000)) {
+    Serial.println("Microphone initialization failed!");
+    return;
   }
 
-  // Initialize I2S microphone
-  Serial.println("Initializing INMP441 microphone...");
-  if (!mic.begin(I2S_PIN_BCK, I2S_PIN_WS, I2S_PIN_SDIN, I2S_SAMPLE_RATE,
-                 I2S_BUF_COUNT, I2S_BUF_LEN, I2S_MIC_LR_PIN_GND)) {
-    Serial.println("Failed to initialize INMP441 microphone!");
-    buffer->freeBuffer();
-    return nullptr;
-  }
-
-  Serial.println("========================================");
-  Serial.println("Starting 5-minute recording...");
-  Serial.println("Do not interrupt power or SD card!");
-  Serial.println("========================================");
-
-  // Record audio into PSRAM
-  size_t offset = 0;
-  size_t psram_size = buffer->getSize();
-  size_t read_count = 0;
-  uint32_t start_time = millis();
-
-  while (offset < psram_size) {
-    // Progress indicator
-    if (read_count % 25 == 0) {
-      float elapsed = (float)(millis() - start_time) / 1000.0f;
-      Serial.printf("[%.1fs] ", elapsed);
-      Serial.print(".");
-    }
-    read_count++;
-
-    // Calculate remaining bytes
-    size_t buffer_bytes = I2S_BUFFER_BYTES;
-    size_t remaining = psram_size - offset;
-    if (buffer_bytes > remaining) {
-      buffer_bytes = remaining;
-    }
-
-    // Read from microphone
-    size_t bytesRead = 0;
-    if (mic.read(buffer->get() + offset, buffer_bytes, &bytesRead) &&
-        bytesRead > 0) {
-      offset += bytesRead;
-    } else {
-      Serial.println("\nError reading from I2S microphone!");
-      buffer->freeBuffer();
-      return nullptr;
-    }
-  }
-
-  uint32_t recording_time = millis() - start_time;
-
-  // Calculate statistics
-  size_t total_samples = offset / I2S_SAMPLE_SIZE;
-  float duration_sec = (float)total_samples / I2S_SAMPLE_RATE;
-
-  Serial.printf("\n========================================\n");
-  Serial.printf("Recording Complete:\n");
-  Serial.printf("  Time elapsed: %u ms\n", recording_time);
-  Serial.printf("  Bytes recorded: %u\n", (unsigned)offset);
-  Serial.printf("  Total samples: %u\n", (unsigned)total_samples);
-  Serial.printf("  Duration: %.2f seconds\n", duration_sec);
-  Serial.printf("========================================\n");
-
-  // Write PSRAM data to SD card
-  Serial.printf("Writing to SD card: %s\n", fname);
-
-  File file = SD.open(fname, FILE_WRITE);
-  if (!file) {
-    Serial.printf("Failed to open file %s for writing!\n", fname);
-    buffer->freeBuffer();
-    return nullptr;
-  }
-
-  // Write in blocks
-  size_t pos = 0;
-  const size_t BLOCK_SIZE = 4096; // 4KB blocks for optimal SD performance
-  uint32_t sd_write_start = millis();
-
-  while (pos < offset) {
-    size_t toWrite = (offset - pos) > BLOCK_SIZE ? BLOCK_SIZE : (offset - pos);
-    size_t written = file.write((uint8_t *)buffer->get() + pos, toWrite);
-
-    if (written != toWrite) {
-      Serial.printf("Error writing block at position %u\n", (unsigned)pos);
-      file.close();
-      buffer->freeBuffer();
-      return nullptr;
-    }
-
-    pos += written;
-
-    // Progress indicator every 40KB
-    if (pos % (BLOCK_SIZE * 10) == 0) {
-      float progress = (float)pos / (float)offset * 100.0f;
-      Serial.printf("  %.1f%% written (%u/%u bytes)\n", progress, (unsigned)pos,
-                    (unsigned)offset);
-    }
-  }
-
-  // Finalize file
-  file.flush();
-  file.close();
-
-  uint32_t sd_write_time = millis() - sd_write_start;
-
-  Serial.printf("========================================\n");
-  Serial.printf("SD Card Write Complete:\n");
-  Serial.printf("  Time: %u ms\n", sd_write_time);
-  Serial.printf("  Speed: %.2f KB/s\n",
-                (float)offset / 1024.0f / ((float)sd_write_time / 1000.0f));
-  Serial.printf("  File: %s\n", fname);
-  Serial.printf("  Size: %u bytes\n", (unsigned)offset);
-  Serial.printf("========================================\n");
-
-  // Cleanup
-  buffer->freeBuffer();
-
-  return fname;
+  Serial.println("Microphone setup complete");
 }
 
-// Take single measurement from microphone
-int32_t Microphone::takeMeasurement() {
-  static INMP441 *mic = nullptr;
-  static bool initialized = false;
+// Create WAV header for PCM data
+void Microphone::createWavHeader(uint8_t *header, uint32_t pcm_data_size,
+                                 uint32_t sample_rate) {
+  pcm_wav_header_t wav_header =
+      PCM_WAV_HEADER_DEFAULT(pcm_data_size,   // wav_sample_size
+                             BITS_PER_SAMPLE, // wav_sample_bits (32-bit)
+                             sample_rate,     // wav_sample_rate
+                             NUM_CHANNELS     // wav_channel_num (mono)
+      );
 
-  // Lazy initialization
-  if (!initialized) {
-    mic = new INMP441();
-    if (!mic->begin(I2S_PIN_BCK, I2S_PIN_WS, I2S_PIN_SDIN, I2S_SAMPLE_RATE,
-                    I2S_BUF_COUNT, I2S_BUF_LEN, I2S_MIC_LR_PIN_GND)) {
-      Serial.println("Failed to initialize microphone for measurement!");
-      delete mic;
-      mic = nullptr;
-      return 0;
+  memcpy(header, &wav_header, sizeof(pcm_wav_header_t));
+}
+
+// Record 5 minutes to file in 30-second chunks with single WAV header
+const char *Microphone::recordFiveMinutesToFile(const char *fname) {
+  static char result_msg[128];
+
+  // Validate input
+  if (!fname || strlen(fname) == 0) {
+    snprintf(result_msg, sizeof(result_msg), "Error: Invalid filename");
+    return result_msg;
+  }
+
+  if (!sd_initialized) {
+    snprintf(result_msg, sizeof(result_msg), "Error: SD card not initialized");
+    return result_msg;
+  }
+
+  if (!mic.begin(16000)) {
+    snprintf(result_msg, sizeof(result_msg),
+             "Error: Microphone not initialized");
+    return result_msg;
+  }
+
+  // Recording parameters
+  const uint32_t CHUNK_DURATION_ms = 30000;  // 30 seconds in milliseconds
+  const uint32_t TOTAL_DURATION_ms = 300000; // 5 minutes in milliseconds
+  const uint32_t NUM_CHUNKS = TOTAL_DURATION_ms / CHUNK_DURATION_ms;
+  const uint32_t AUDIO_SAMPLE_RATE = 16000;
+
+  Serial.printf("Starting 5-minute recording to file: %s\n", fname);
+  Serial.printf("Total chunks: %d, Chunk duration: %d ms\n", NUM_CHUNKS,
+                CHUNK_DURATION_ms);
+
+  // Calculate total PCM data size for the WAV header
+  uint32_t num_samples = (AUDIO_SAMPLE_RATE / 1000) * TOTAL_DURATION_ms;
+  uint32_t total_pcm_size = num_samples * (BITS_PER_SAMPLE / 8) * NUM_CHANNELS;
+
+  Serial.printf("Total PCM size for header: %d bytes\n", total_pcm_size);
+
+  // Create WAV header once for the entire 5-minute recording
+  uint8_t wav_header[PCM_WAV_HEADER_SIZE];
+  createWavHeader(wav_header, total_pcm_size, AUDIO_SAMPLE_RATE);
+
+  // Write WAV header to file (only once at the beginning)
+  if (!sd.appendToFile(SD, fname, wav_header, PCM_WAV_HEADER_SIZE)) {
+    snprintf(result_msg, sizeof(result_msg),
+             "Error: Failed to write WAV header to SD card");
+    Serial.println(result_msg);
+    return result_msg;
+  }
+
+  Serial.printf("WAV header written (%d bytes)\n", PCM_WAV_HEADER_SIZE);
+
+  // Record and append each chunk
+  for (uint32_t i = 0; i < NUM_CHUNKS; i++) {
+    Serial.printf("\n--- Recording chunk %d of %d ---\n", i + 1, NUM_CHUNKS);
+
+    // Record raw PCM data for this chunk (no header)
+    if (!mic.recordPCMOnly(CHUNK_DURATION_ms)) {
+      snprintf(result_msg, sizeof(result_msg),
+               "Error: Recording failed at chunk %d", i + 1);
+      Serial.println(result_msg);
+      return result_msg;
     }
-    initialized = true;
-    Serial.println("Microphone initialized for measurements");
+
+    // Get the PCM buffer and size
+    uint8_t *buffer = mic.getPCMBuffer();
+    uint32_t buffer_size = mic.getWavSize();
+
+    // Validate buffer
+    if (!buffer || buffer_size == 0) {
+      snprintf(result_msg, sizeof(result_msg),
+               "Error: Empty buffer at chunk %d", i + 1);
+      Serial.println(result_msg);
+      return result_msg;
+    }
+
+    Serial.printf("Chunk %d recorded: %d bytes\n", i + 1, buffer_size);
+
+    // Append raw PCM data to file
+    if (!sd.appendToFile(SD, fname, buffer, buffer_size)) {
+      snprintf(result_msg, sizeof(result_msg),
+               "Error: Failed to write chunk %d to SD card", i + 1);
+      Serial.println(result_msg);
+      return result_msg;
+    }
+
+    Serial.printf("Chunk %d written to file\n", i + 1);
   }
 
-  if (!mic)
-    return 0;
+  // Success message
+  snprintf(result_msg, sizeof(result_msg),
+           "Success: 5-minute recording saved to %s", fname);
+  Serial.println("\n=== Recording Complete ===");
+  Serial.println(result_msg);
 
-  // Read single sample
-  uint8_t sample_buffer[I2S_SAMPLE_SIZE];
-  size_t bytesRead = 0;
-
-  if (mic->read(sample_buffer, I2S_SAMPLE_SIZE, &bytesRead) && bytesRead > 0) {
-    int32_t *sample = (int32_t *)sample_buffer;
-    return sample[0];
-  }
-
-  return 0;
+  return result_msg;
 }

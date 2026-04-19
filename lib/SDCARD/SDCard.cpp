@@ -127,6 +127,30 @@ void SDCARD::testFileIO(fs::FS &fs, const char *path) {
   file.close();
 }
 
+// In SDCard.cpp - implementation:
+bool SDCARD::appendToFile(fs::FS &fs, const char *path, uint8_t *data,
+                          size_t size) {
+  Serial.printf("Appending %d bytes to file: %s\n", size, path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file) {
+    Serial.println("Failed to open file for appending");
+    return false;
+  }
+
+  size_t bytes_written = file.write(data, size);
+  file.close();
+
+  if (bytes_written != size) {
+    Serial.printf("Warning: Only %d of %d bytes written\n", bytes_written,
+                  size);
+    return false;
+  }
+
+  Serial.printf("Successfully appended %d bytes\n", bytes_written);
+  return true;
+}
+
 File SDCARD::open(const char *fname, const char &operation) {
 
   if (operation == 'w') {
