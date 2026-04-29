@@ -1,68 +1,94 @@
 #include "WeatherSensors.h"
 
-WeatherSensors::WeatherSensors(int bmeSDA, int bmeSCL, int rainPin)
-{
-	this->I2CBME.begin(bmeSDA, bmeSCL, 400000);
-	// 0x77 is address for i2c for sensor dont change
-	bool status = this->bme.begin(0x77, &this->I2CBME);
-
-	while (!status)
-	{
-		Serial.println("Couldn't find BME280 sensor; check wiring!");
-		delay(1000);
-		status = this->bme.begin(0x77, &this->I2CBME);
-	}
-
-	this->rainPin = rainPin;
-	pinMode(this->rainPin, INPUT);
+WeatherSensors::WeatherSensors(int bmeSDA, int bmeSCL, int rainPin) {
+  this->bmeSDA = bmeSDA;
+  this->bmeSCL = bmeSCL;
+  this->rainPin = rainPin;
+  this->initialized = false;
+  // Don't initialize I2C here - do it in initialize()
 };
 
-float WeatherSensors::getTemperature()
-{
-	//(Celsius * 1.8) + 32 = Farenheit
-	return (this->bme.readTemperature() * 1.8) + 32;
+bool WeatherSensors::initialize() {
+  Serial.println("[WeatherSensors] Initializing I2C on pins SDA=" +
+                 String(this->bmeSDA) + " SCL=" + String(this->bmeSCL));
+
+  // Add a small delay before I2C init
+  delay(100);
+
+  // Initialize I2C with explicit error handling
+  if (!this->I2CBME.begin(this->bmeSDA, this->bmeSCL, 400000)) {
+    Serial.println("[WeatherSensors] ERROR: I2C initialization failed!");
+    return false;
+  }
+
+  Serial.println("[WeatherSensors] I2C initialized successfully");
+  delay(100);
+
+  // Try to initialize BME280
+  Serial.println(
+      "[WeatherSensors] Attempting BME280 initialization at address 0x77...");
+  bool status = this->bme.begin(0x77, &this->I2CBME);
+
+  if (!status) {
+    Serial.println("[WeatherSensors] ERROR: BME280 not found at 0x77!");
+    return false;
+  }
+
+  Serial.println("[WeatherSensors] BME280 initialized successfully");
+
+  this->initialized = true;
+  return true;
 }
 
-float WeatherSensors::getPressure()
-{
-	return this->bme.readPressure();
+float WeatherSensors::getTemperature() {
+  if (!this->initialized)
+    return 0.0;
+  return (this->bme.readTemperature() * 1.8) + 32;
 }
 
-float WeatherSensors::getHumidity()
-{
-	return this->bme.readHumidity();
+float WeatherSensors::getPressure() {
+  if (!this->initialized)
+    return 0.0;
+  return this->bme.readPressure();
 }
 
-float WeatherSensors::getAltitude()
-{
-	return this->bme.readAltitude(SEALEVELPRESSURE_HPA);
+float WeatherSensors::getHumidity() {
+  if (!this->initialized)
+    return 0.0;
+  return this->bme.readHumidity();
 }
 
-bool WeatherSensors::isRaining()
-{
-	int rain_state = digitalRead(this->rainPin);
-	Serial.println("Rain sensor state: " + String(rain_state)); // Add this line for debugging
-	return !(rain_state == HIGH);
+float WeatherSensors::getAltitude() {
+  if (!this->initialized)
+    return 0.0;
+  return this->bme.readAltitude(SEALEVELPRESSURE_HPA);
 }
 
-void WeatherSensors::printAllValues()
-{
-	float temperature = this->bme.readTemperature();
-	float humidity = this->bme.readHumidity();
-	float Altitude = this->bme.readAltitude(SEALEVELPRESSURE_HPA);
-	float pressure = this->bme.readPressure();
-
-	bool isRaining = this->isRaining();
-
-	Serial.println("Temperature: " + String(temperature));
-	Serial.println("Humidity: " + String(humidity));
-	Serial.println("Altitude: " + String(Altitude));
-	Serial.println("Pressure: " + String(pressure));
-	Serial.println("is Raining: " + String(isRaining));
+bool WeatherSensors::isRaining() {
+  int rain_state = digitalRead(this->rainPin);
+  Serial.println("Rain sensor state: " + String(rain_state));
+  return !(rain_state == HIGH);
 }
 
-WeatherSensors::~WeatherSensors()
-{
+void WeatherSensors::printAllValues() {
+  if (!this->initialized) {
+    Serial.println("[WeatherSensors] Sensors not initialized!");
+    return;
+  }
 
-	delete this;
+  float temperature = this->bme.readTemperature();
+  float humidity = this->bme.readHumidity();
+  float altitude = this->bme.readAltitude(SEALEVELPRESSURE_HPA);
+  float pressure = this->bme.readPressure();
+  bool isRaining = this->isRaining();
+
+  Serial.println("Temperature: " + String(temperature));
+  Serial.println("Humidity: " + String(humidity));
+  Serial.println("Altitude: " + String(altitude));
+  Serial.println("Pressure: " + String(pressure));
+  Serial.println("Is Raining: " + String(isRaining));
+}
+
+WeatherSensors::~WeatherSensors() {
+  // Don't delete this!
 }
