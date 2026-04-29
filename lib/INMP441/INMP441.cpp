@@ -17,7 +17,7 @@ bool INMP441::begin(uint32_t sr) {
 
   sample_rate = sr;
 
-  // Configure I2S
+  // OPTIMIZED I2S CONFIG
   i2s_config_t i2s_config = {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = sample_rate,
@@ -25,19 +25,17 @@ bool INMP441::begin(uint32_t sr) {
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_STAND_I2S),
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
-      .dma_buf_count = 8,
-      .dma_buf_len = BUFFER_SIZE,
-      .use_apll = false,
+      .dma_buf_count = 4, // Reduced from 8
+      .dma_buf_len = 512, // Reduced from 1024
+      .use_apll = true,   // CRITICAL: Use APLL for better clock accuracy
       .tx_desc_auto_clear = false,
       .fixed_mclk = 0};
 
-  // Install driver
   if (i2s_driver_install(I2S_NUM, &i2s_config, 0, NULL) != ESP_OK) {
     Serial.println("I2S driver install failed!");
     return false;
   }
 
-  // Set pins
   i2s_pin_config_t pin_config = {.mck_io_num = -1,
                                  .bck_io_num = pin_sck,
                                  .ws_io_num = pin_ws,
@@ -115,29 +113,25 @@ void INMP441::applyGain(float gain_factor) {
     return;
   }
 
-  // Cast buffer to 32-bit signed integer array
   int32_t *samples = (int32_t *)wav_buffer;
   uint32_t num_samples = wav_size / sizeof(int32_t);
 
-  Serial.printf("Applying gain factor: %.2f to %d samples\n", gain_factor,
-                num_samples);
+  Serial.printf("Applying gain factor: %.2f with soft clipping\n", gain_factor);
 
-  // Apply gain to each sample with clipping to prevent overflow
   for (uint32_t i = 0; i < num_samples; i++) {
-    // Convert to float, apply gain, and clip to 32-bit signed range
+    // Apply gain
     float amplified = (float)samples[i] * gain_factor;
 
-    // Clip to prevent overflow
-    if (amplified > 2147483647.0f) {
-      samples[i] = 2147483647; // Max int32
-    } else if (amplified < -2147483648.0f) {
-      samples[i] = -2147483648; // Min int32
-    } else {
-      samples[i] = (int32_t)amplified;
-    }
+    // SOFT CLIPPING using tanh (smooth, preserves quality)
+    // Normalize to roughly [-1, 1] range before tanh
+    float normalized = amplified / 2147483647.0f;
+    float clipped = tanhf(normalized); // Smooth clipping
+
+    // Scale back to int32 range
+    samples[i] = (int32_t)(clipped * 2147483647.0f);
   }
 
-  Serial.println("Gain applied successfully");
+  Serial.println("Gain applied with soft clipping");
 }
 
 void INMP441::clearBuffer() {
