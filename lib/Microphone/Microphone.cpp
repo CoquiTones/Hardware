@@ -1,15 +1,13 @@
+// Microphone.cpp
 #include "Microphone.h"
 
-// Constructor
 Microphone::Microphone(SDCARD &sd, INMP441 &mic)
     : sd(sd), mic(mic), sd_initialized(false) {}
 
-// Destructor
 Microphone::~Microphone() {
   // Resources managed by singleton instances
 }
 
-// Setup SD card and microphone
 void Microphone::initialize() {
   sd_initialized = sd.setup();
 
@@ -18,7 +16,6 @@ void Microphone::initialize() {
     return;
   }
 
-  // Initialize microphone with 16kHz sample rate
   if (!mic.begin(16000)) {
     Serial.println("Microphone initialization failed!");
     return;
@@ -27,7 +24,6 @@ void Microphone::initialize() {
   Serial.println("Microphone setup complete");
 }
 
-// Create WAV header for PCM data
 void Microphone::createWavHeader(uint8_t *header, uint32_t pcm_data_size,
                                  uint32_t sample_rate) {
   pcm_wav_header_t wav_header =
@@ -59,32 +55,24 @@ const char *Microphone::recordFiveMinutesToFile(const char *fname) {
     return result_msg;
   }
 
-  // Recording parameters - REDUCED TO 1-SECOND CHUNKS
-  const uint32_t CHUNK_DURATION_ms = 1000;
-  const uint32_t TOTAL_DURATION_ms = 10000;
-  const uint32_t NUM_CHUNKS = TOTAL_DURATION_ms / CHUNK_DURATION_ms;
+  // Recording parameters
+  const uint32_t TOTAL_DURATION_ms = 300000; // 5 minutes
   const uint32_t AUDIO_SAMPLE_RATE = 16000;
-
-  // GAIN ADJUSTMENT - Change this value to adjust volume
-  // 1.0 = no change, 2.0 = 2x louder, 4.0 = 4x louder, etc.
   const float GAIN_FACTOR = 32.0f;
 
-  Serial.printf("Starting 5-minute recording to file: %s\n", fname);
-  Serial.printf("Total chunks: %d, Chunk duration: %d ms\n", NUM_CHUNKS,
-                CHUNK_DURATION_ms);
+  Serial.printf("Starting 5-minute continuous recording to: %s\n", fname);
   Serial.printf("Gain factor: %.2f\n", GAIN_FACTOR);
 
-  // Calculate total PCM data size for the WAV header
+  // Calculate total PCM data size for WAV header
   uint32_t num_samples = (AUDIO_SAMPLE_RATE / 1000) * TOTAL_DURATION_ms;
   uint32_t total_pcm_size = num_samples * (BITS_PER_SAMPLE / 8) * NUM_CHANNELS;
 
   Serial.printf("Total PCM size for header: %d bytes\n", total_pcm_size);
 
-  // Create WAV header once for the entire 5-minute recording
+  // Create and write WAV header
   uint8_t wav_header[PCM_WAV_HEADER_SIZE];
   createWavHeader(wav_header, total_pcm_size, AUDIO_SAMPLE_RATE);
 
-  // Write WAV header to file (only once at the beginning)
   if (!sd.appendToFile(SD, fname, wav_header, PCM_WAV_HEADER_SIZE)) {
     snprintf(result_msg, sizeof(result_msg),
              "Error: Failed to write WAV header to SD card");
@@ -94,51 +82,183 @@ const char *Microphone::recordFiveMinutesToFile(const char *fname) {
 
   Serial.printf("WAV header written (%d bytes)\n", PCM_WAV_HEADER_SIZE);
 
-  // Record and append each chunk
-  for (uint32_t i = 0; i < NUM_CHUNKS; i++) {
-    Serial.printf("\n--- Recording chunk %d of %d ---\n", i + 1, NUM_CHUNKS);
-
-    // Record raw PCM data for this chunk (no header)
-    if (!mic.recordPCMOnly(CHUNK_DURATION_ms)) {
-      snprintf(result_msg, sizeof(result_msg),
-               "Error: Recording failed at chunk %d", i + 1);
-      Serial.println(result_msg);
-      return result_msg;
-    }
-
-    // Apply gain to amplify the audio
-    mic.applyGain(GAIN_FACTOR);
-
-    // Get the PCM buffer and size
-    uint8_t *buffer = mic.getPCMBuffer();
-    uint32_t buffer_size = mic.getWavSize();
-
-    // Validate buffer
-    if (!buffer || buffer_size == 0) {
-      snprintf(result_msg, sizeof(result_msg),
-               "Error: Empty buffer at chunk %d", i + 1);
-      Serial.println(result_msg);
-      return result_msg;
-    }
-
-    Serial.printf("Chunk %d recorded: %d bytes\n", i + 1, buffer_size);
-
-    // Append raw PCM data to file
-    if (!sd.appendToFile(SD, fname, buffer, buffer_size)) {
-      snprintf(result_msg, sizeof(result_msg),
-               "Error: Failed to write chunk %d to SD card", i + 1);
-      Serial.println(result_msg);
-      return result_msg;
-    }
-
-    Serial.printf("Chunk %d written to file\n", i + 1);
+  // START CONTINUOUS RECORDING IN BACKGROUND TASK
+  if (!mic.startContinuousRecording(500)) { // 500ms chunks
+    snprintf(result_msg, sizeof(result_msg),
+             "Error: Failed to start continuous recording");
+    Serial.println(result_msg);
+    return result_msg;
   }
 
-  // Success message
+  Serial.println("Continuous recording started - capturing audio...");
+
+  uint32_t total_bytes_written = 0;
+  uint32_t chunk_count = 0;
+  uint32_t start_time = millis();
+  uint32_t last_print = start_time;
+
+  // MAIN WRITE LOOP - continuously receive chunks and write to SD
+  // No gaps between chunks because recording task runs on separate core
+  while (millis() - start_time < TOTAL_DURATION_ms) {
+    AudioChunk chunk;
+
+    // Get next audio chunk from queue (blocks until available)
+    // Timeout of 2 seconds - if no data arrives, timeout and check timer
+    if (mic.getAudioChunk(chunk, 2000)) {
+      // Apply gain to the chunk data
+      int32_t *samples = (int32_t *)chunk.data;
+      uint32_t num_chunk_samples = chunk.size / sizeof(int32_t);
+
+      for (uint32_t i = 0; i < num_chunk_samples; i++) {
+        float amplified = (float)samples[i] * GAIN_FACTOR;
+        float normalized = amplified / 2147483647.0f;
+        float clipped = tanhf(normalized); // Soft clipping
+        samples[i] = (int32_t)(clipped * 2147483647.0f);
+      }
+
+      // Write processed chunk to SD card
+      if (!sd.appendToFile(SD, fname, chunk.data, chunk.size)) {
+        mic.stopContinuousRecording();
+        snprintf(result_msg, sizeof(result_msg),
+                 "Error: Failed to write chunk %d to SD card", chunk_count + 1);
+        Serial.println(result_msg);
+        free(chunk.data);
+        return result_msg;
+      }
+
+      total_bytes_written += chunk.size;
+      chunk_count++;
+
+      // Free the chunk buffer after writing
+      free(chunk.data);
+
+      // Print progress every 10 seconds
+      uint32_t elapsed = millis() - start_time;
+      if (elapsed - last_print >= 10000) {
+        uint32_t elapsed_sec = elapsed / 1000;
+        uint32_t remaining_sec = (TOTAL_DURATION_ms - elapsed) / 1000;
+        float mb_written = total_bytes_written / (1024.0f * 1024.0f);
+        Serial.printf("[%d/%d sec] Chunk %d written | %.2f MB total | "
+                      "Queue healthy\n",
+                      elapsed_sec, TOTAL_DURATION_ms / 1000, chunk_count,
+                      mb_written);
+        last_print = elapsed;
+      }
+    } else {
+      // Timeout waiting for chunk - could indicate recording issue
+      uint32_t elapsed = millis() - start_time;
+      Serial.printf("Warning: Timeout waiting for chunk at %d ms\n", elapsed);
+    }
+  }
+
+  // STOP CONTINUOUS RECORDING
+  mic.stopContinuousRecording();
+
+  // Final summary
+  uint32_t elapsed = millis() - start_time;
+  float mb_total = total_bytes_written / (1024.0f * 1024.0f);
+
   snprintf(result_msg, sizeof(result_msg),
-           "Success: 5-minute recording saved to %s", fname);
+           "Success: 5-min recording complete | %d chunks | %.2f MB | %d ms",
+           chunk_count, mb_total, elapsed);
+
   Serial.println("\n=== Recording Complete ===");
   Serial.println(result_msg);
+  Serial.printf("Average chunk write time: %.2f ms\n",
+                (float)elapsed / chunk_count);
 
+  return result_msg;
+}
+
+const char *Microphone::recordDurationToFile(const char *fname,
+                                             uint32_t duration_ms) {
+  static char result_msg[128];
+
+  if (!fname || strlen(fname) == 0) {
+    snprintf(result_msg, sizeof(result_msg), "Error: Invalid filename");
+    return result_msg;
+  }
+
+  if (!sd_initialized) {
+    snprintf(result_msg, sizeof(result_msg), "Error: SD card not initialized");
+    return result_msg;
+  }
+
+  if (!mic.begin(16000)) {
+    snprintf(result_msg, sizeof(result_msg),
+             "Error: Microphone not initialized");
+    return result_msg;
+  }
+
+  const uint32_t AUDIO_SAMPLE_RATE = 16000;
+  const float GAIN_FACTOR = 32.0f;
+
+  Serial.printf("Starting %d ms continuous recording to: %s\n", duration_ms,
+                fname);
+
+  // Calculate total PCM data size
+  uint32_t num_samples = (AUDIO_SAMPLE_RATE / 1000) * duration_ms;
+  uint32_t total_pcm_size = num_samples * (BITS_PER_SAMPLE / 8) * NUM_CHANNELS;
+
+  // Create and write WAV header
+  uint8_t wav_header[PCM_WAV_HEADER_SIZE];
+  createWavHeader(wav_header, total_pcm_size, AUDIO_SAMPLE_RATE);
+
+  if (!sd.appendToFile(SD, fname, wav_header, PCM_WAV_HEADER_SIZE)) {
+    snprintf(result_msg, sizeof(result_msg),
+             "Error: Failed to write WAV header");
+    return result_msg;
+  }
+
+  // Start continuous recording
+  if (!mic.startContinuousRecording(500)) {
+    snprintf(result_msg, sizeof(result_msg),
+             "Error: Failed to start recording");
+    return result_msg;
+  }
+
+  uint32_t total_bytes_written = 0;
+  uint32_t chunk_count = 0;
+  uint32_t start_time = millis();
+
+  // Record for specified duration
+  while (millis() - start_time < duration_ms) {
+    AudioChunk chunk;
+
+    if (mic.getAudioChunk(chunk, 2000)) {
+      // Apply gain
+      int32_t *samples = (int32_t *)chunk.data;
+      uint32_t num_chunk_samples = chunk.size / sizeof(int32_t);
+
+      for (uint32_t i = 0; i < num_chunk_samples; i++) {
+        float amplified = (float)samples[i] * GAIN_FACTOR;
+        float normalized = amplified / 2147483647.0f;
+        float clipped = tanhf(normalized);
+        samples[i] = (int32_t)(clipped * 2147483647.0f);
+      }
+
+      // Write to SD
+      if (!sd.appendToFile(SD, fname, chunk.data, chunk.size)) {
+        mic.stopContinuousRecording();
+        snprintf(result_msg, sizeof(result_msg),
+                 "Error: Failed to write to SD at chunk %d", chunk_count + 1);
+        free(chunk.data);
+        return result_msg;
+      }
+
+      total_bytes_written += chunk.size;
+      chunk_count++;
+      free(chunk.data);
+    }
+  }
+
+  mic.stopContinuousRecording();
+
+  float mb_total = total_bytes_written / (1024.0f * 1024.0f);
+  snprintf(result_msg, sizeof(result_msg),
+           "Success: Recording complete | %d chunks | %.2f MB", chunk_count,
+           mb_total);
+
+  Serial.println(result_msg);
   return result_msg;
 }

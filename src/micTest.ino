@@ -39,7 +39,7 @@ void setup() {
   Serial.println("Do not disconnect power or remove SD card!\n");
 
   unsigned long start_time = millis();
-  const char *result = microphone.recordFiveMinutesToFile("/recording-with-sensors-connected-oooohhh.wav");
+  const char *result = microphone.recordFiveMinutesToFile("/recording-with-sensors-no-cuts-maybee.wav");
   unsigned long elapsed_time = millis() - start_time;
 
   Serial.println("\n=== Recording Complete ===\n");
