@@ -40,11 +40,9 @@ void Microphone::createWavHeader(uint8_t *header, uint32_t pcm_data_size,
   memcpy(header, &wav_header, sizeof(pcm_wav_header_t));
 }
 
-// Record 5 minutes to file in 30-second chunks with single WAV header
 const char *Microphone::recordFiveMinutesToFile(const char *fname) {
   static char result_msg[128];
 
-  // Validate input
   if (!fname || strlen(fname) == 0) {
     snprintf(result_msg, sizeof(result_msg), "Error: Invalid filename");
     return result_msg;
@@ -61,15 +59,21 @@ const char *Microphone::recordFiveMinutesToFile(const char *fname) {
     return result_msg;
   }
 
-  // Recording parameters
-  const uint32_t CHUNK_DURATION_ms = 30000;  // 30 seconds in milliseconds
-  const uint32_t TOTAL_DURATION_ms = 300000; // 5 minutes in milliseconds
-  const uint32_t NUM_CHUNKS = TOTAL_DURATION_ms / CHUNK_DURATION_ms;
+  // Recording parameters - REDUCED TO 1-SECOND CHUNKS
+  const uint32_t CHUNK_DURATION_ms = 1000;   // 1 second (64 KB)
+  const uint32_t TOTAL_DURATION_ms = 300000; // 5 minutes (300,000 ms) - FIXED!
+  const uint32_t NUM_CHUNKS =
+      TOTAL_DURATION_ms / CHUNK_DURATION_ms; // 300 chunks
   const uint32_t AUDIO_SAMPLE_RATE = 16000;
+
+  // GAIN ADJUSTMENT - Change this value to adjust volume
+  // 1.0 = no change, 2.0 = 2x louder, 4.0 = 4x louder, etc.
+  const float GAIN_FACTOR = 4.0f;
 
   Serial.printf("Starting 5-minute recording to file: %s\n", fname);
   Serial.printf("Total chunks: %d, Chunk duration: %d ms\n", NUM_CHUNKS,
                 CHUNK_DURATION_ms);
+  Serial.printf("Gain factor: %.2f\n", GAIN_FACTOR);
 
   // Calculate total PCM data size for the WAV header
   uint32_t num_samples = (AUDIO_SAMPLE_RATE / 1000) * TOTAL_DURATION_ms;
@@ -102,6 +106,9 @@ const char *Microphone::recordFiveMinutesToFile(const char *fname) {
       Serial.println(result_msg);
       return result_msg;
     }
+
+    // Apply gain to amplify the audio
+    mic.applyGain(GAIN_FACTOR);
 
     // Get the PCM buffer and size
     uint8_t *buffer = mic.getPCMBuffer();

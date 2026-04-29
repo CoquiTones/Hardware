@@ -66,8 +66,22 @@ bool INMP441::recordPCMOnly(uint32_t duration_ms) {
   uint32_t num_samples = (sample_rate / 1000) * duration_ms;
   uint32_t pcm_data_size = num_samples * (BITS_PER_SAMPLE / 8) * NUM_CHANNELS;
 
-  Serial.printf("Recording PCM %d ms at %d Hz (%d bytes)\n", duration_ms,
-                sample_rate, pcm_data_size);
+  // Check available heap memory before allocation
+  uint32_t free_heap = esp_get_free_heap_size();
+  uint32_t largest_block = heap_caps_get_largest_free_block(MALLOC_CAP_8BIT);
+
+  Serial.printf("Free heap: %d bytes, Largest contiguous block: %d bytes\n",
+                free_heap, largest_block);
+  Serial.printf("Recording PCM %d ms at %d Hz (%d bytes requested)\n",
+                duration_ms, sample_rate, pcm_data_size);
+
+  // Validate sufficient memory
+  if (largest_block < pcm_data_size) {
+    Serial.printf(
+        "Error: Insufficient contiguous memory! Need %d bytes, have %d bytes\n",
+        pcm_data_size, largest_block);
+    return false;
+  }
 
   // Allocate buffer for PCM data ONLY (no header)
   wav_buffer = (uint8_t *)malloc(pcm_data_size);
@@ -93,6 +107,37 @@ bool INMP441::recordPCMOnly(uint32_t duration_ms) {
   wav_size = bytes_read;
   Serial.printf("PCM data recorded: %d bytes\n", wav_size);
   return true;
+}
+
+void INMP441::applyGain(float gain_factor) {
+  if (!wav_buffer || wav_size == 0) {
+    Serial.println("Error: No audio buffer to apply gain to!");
+    return;
+  }
+
+  // Cast buffer to 32-bit signed integer array
+  int32_t *samples = (int32_t *)wav_buffer;
+  uint32_t num_samples = wav_size / sizeof(int32_t);
+
+  Serial.printf("Applying gain factor: %.2f to %d samples\n", gain_factor,
+                num_samples);
+
+  // Apply gain to each sample with clipping to prevent overflow
+  for (uint32_t i = 0; i < num_samples; i++) {
+    // Convert to float, apply gain, and clip to 32-bit signed range
+    float amplified = (float)samples[i] * gain_factor;
+
+    // Clip to prevent overflow
+    if (amplified > 2147483647.0f) {
+      samples[i] = 2147483647; // Max int32
+    } else if (amplified < -2147483648.0f) {
+      samples[i] = -2147483648; // Min int32
+    } else {
+      samples[i] = (int32_t)amplified;
+    }
+  }
+
+  Serial.println("Gain applied successfully");
 }
 
 void INMP441::clearBuffer() {

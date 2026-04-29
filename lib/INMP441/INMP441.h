@@ -2,14 +2,15 @@
 #define INMP441_H
 
 #include "Arduino.h"
-#include "wav_header.h" // Include your WAV header file
+#include "wav_header.h"
 #include <driver/gpio.h>
 #include <driver/i2s.h>
+#include <esp_heap_caps.h>
 
 #define I2S_NUM I2S_NUM_0
 
 #define SAMPLE_RATE 16000
-#define BUFFER_SIZE 4096
+#define BUFFER_SIZE 1024
 #define BITS_PER_SAMPLE 32
 #define NUM_CHANNELS 1
 
@@ -27,6 +28,9 @@ public:
   bool recordPCMOnly(uint32_t duration_ms);
 
   void clearBuffer();
+
+  // Apply gain to PCM buffer
+  void applyGain(float gain_factor);
 
   uint8_t *getWavBuffer() const { return wav_buffer; }
   uint32_t getWavSize() const { return wav_size; }

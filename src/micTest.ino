@@ -9,9 +9,9 @@
 #define SD_PIN_MOSI 6
 #define SD_PIN_MISO 7
 
-#define MIC_PIN_SCK 19
-#define MIC_PIN_WS 20
-#define MIC_PIN_DIN 47
+#define MIC_PIN_SCK 19 // green
+#define MIC_PIN_WS 20 // blue
+#define MIC_PIN_DIN 47 // grey
 
 // Create instances
 SDCARD sdCard(SD_PIN_CS, SD_PIN_SCLK, SD_PIN_MOSI, SD_PIN_MISO);
@@ -34,7 +34,7 @@ void setup() {
   Serial.println("Do not disconnect power or remove SD card!\n");
 
   unsigned long start_time = millis();
-  const char *result = microphone.recordFiveMinutesToFile("/recording.wav");
+  const char *result = microphone.recordFiveMinutesToFile("/recording-1.wav");
   unsigned long elapsed_time = millis() - start_time;
 
   Serial.println("\n=== Recording Complete ===\n");
