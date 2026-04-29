@@ -60,15 +60,14 @@ const char *Microphone::recordFiveMinutesToFile(const char *fname) {
   }
 
   // Recording parameters - REDUCED TO 1-SECOND CHUNKS
-  const uint32_t CHUNK_DURATION_ms = 1000;   // 1 second (64 KB)
-  const uint32_t TOTAL_DURATION_ms = 300000; // 5 minutes (300,000 ms) - FIXED!
-  const uint32_t NUM_CHUNKS =
-      TOTAL_DURATION_ms / CHUNK_DURATION_ms; // 300 chunks
+  const uint32_t CHUNK_DURATION_ms = 1000;
+  const uint32_t TOTAL_DURATION_ms = 10000;
+  const uint32_t NUM_CHUNKS = TOTAL_DURATION_ms / CHUNK_DURATION_ms;
   const uint32_t AUDIO_SAMPLE_RATE = 16000;
 
   // GAIN ADJUSTMENT - Change this value to adjust volume
   // 1.0 = no change, 2.0 = 2x louder, 4.0 = 4x louder, etc.
-  const float GAIN_FACTOR = 4.0f;
+  const float GAIN_FACTOR = 32.0f;
 
   Serial.printf("Starting 5-minute recording to file: %s\n", fname);
   Serial.printf("Total chunks: %d, Chunk duration: %d ms\n", NUM_CHUNKS,
