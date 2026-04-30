@@ -73,6 +73,8 @@ public:
    */
   bool setup();
 
+  bool exists(const char *fname);
+
 private:
   int pin_cs;
   int pin_sclk;

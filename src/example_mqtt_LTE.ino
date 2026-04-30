@@ -1,22 +1,18 @@
 /*
  * Botletics SIM7000 - OAuth2 Authenticated File Upload via HTTPS
- * 1. Authenticates with server to get JWT token
- * 2. Uploads file using Bearer token
- *
- * Author: Built from Botletics IoT Example
- * Date: 2026
+ * Using EspSoftwareSerial (plerup) for ESP32
  */
 
 #include "BotleticsSIM7000.h"
 #include <SDCard.h>
 #include <SPI.h>
-#include <SoftwareSerial.h>
+#include <SoftwareSerial.h> // EspSoftwareSerial library
 
 // ==================== PIN DEFINITIONS ====================
 #define PWRKEY 19
 #define RST 20
-#define TX 47  // Microcontroller RX
-#define RX 48   // Microcontroller TX
+#define TX 47 // Microcontroller RX (modem TX)
+#define RX 48 // Microcontroller TX (modem RX)
 #define LED 10
 
 #define SD_PIN_CS 4
@@ -27,8 +23,9 @@
 #define APN "fast-tmobile.com"
 
 // ==================== MODEM SETUP ====================
-SoftwareSerial modemSS = SoftwareSerial(TX, RX);
-SoftwareSerial *modemSerial = &modemSS;
+// Create EspSoftwareSerial instance with correct namespace
+EspSoftwareSerial::UART modemSS;
+
 SDCARD sdCard(SD_PIN_CS, SD_PIN_SCLK, SD_PIN_MOSI, SD_PIN_MISO);
 
 Botletics_modem_LTE modem = Botletics_modem_LTE();
@@ -68,7 +65,7 @@ void setup() {
   digitalWrite(RST, HIGH);
 
   // Initialize SD card
-  if (!sdCard.begin(SD_PIN_CS)) {
+  if (!sdCard.setup()) {
     Serial.println(F("ERROR: SD card initialization failed!"));
     while (1)
       ;
@@ -83,7 +80,7 @@ void setup() {
       ;
   }
 
-  uploadFile = sdCard.open(fileName, FILE_READ);
+  uploadFile = sdCard.open(fileName, 'r');
   fileSize = uploadFile.size();
   uploadFile.close();
 
@@ -230,24 +227,20 @@ bool parseTokenResponse() {
   Serial.println(F("--- End Response ---\n"));
 
   // Extract access_token from JSON response
-  // Looking for: "access_token":"eyJ0eXAiOiJKV1QiLC..."
   const char *tokenStart = strstr(responseBuffer, "\"access_token\":\"");
   if (!tokenStart) {
     Serial.println(F("ERROR: access_token not found in response!"));
     return false;
   }
 
-  // Move pointer past the "access_token":"
   tokenStart += 16;
 
-  // Find the closing quote
   const char *tokenEnd = strchr(tokenStart, '"');
   if (!tokenEnd) {
     Serial.println(F("ERROR: Token format invalid!"));
     return false;
   }
 
-  // Extract token
   uint16_t tokenLen = tokenEnd - tokenStart;
   if (tokenLen > sizeof(jwtToken) - 1) {
     Serial.println(F("ERROR: Token too long!"));
@@ -273,7 +266,7 @@ bool uploadFile_HTTPS() {
 
   Serial.println(F("Starting authenticated file upload..."));
 
-  uploadFile = sdCard.open(fileName, FILE_READ);
+  uploadFile = sdCard.open(fileName, 'r');
   if (!uploadFile) {
     Serial.println(F("ERROR: Cannot open file for upload!"));
     return false;
@@ -435,11 +428,23 @@ bool netStatus() {
 }
 
 void moduleSetup() {
-  modemSS.begin(115200);
+  // Initialize EspSoftwareSerial with correct parameters
+  // begin(baudrate, config, rxPin, txPin, invert)
+  modemSS.begin(115200, EspSoftwareSerial::SWSERIAL_8N1, RX, TX, false);
+
+  // Validate the configuration
+  if (!modemSS) {
+    Serial.println(F("ERROR: Invalid EspSoftwareSerial pin configuration!"));
+    while (1)
+      ;
+  }
+
   Serial.println(F("Setting modem baud to 9600..."));
   modemSS.println("AT+IPR=9600");
   delay(100);
-  modemSS.begin(9600);
+
+  // Reinitialize at 9600
+  modemSS.begin(9600, EspSoftwareSerial::SWSERIAL_8N1, RX, TX, false);
 
   if (!modem.begin(modemSS)) {
     Serial.println(F("ERROR: Couldn't find modem!"));

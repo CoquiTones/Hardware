@@ -155,6 +155,18 @@ File SDCARD::open(const char *fname, const char &operation) {
   }
 }
 
+bool SDCARD::exists(const char *fname) {
+  Serial.printf("Checking if file exists: %s\n", fname);
+
+  if (SD.exists(fname)) {
+    Serial.println("File exists");
+    return true;
+  } else {
+    Serial.println("File does not exist");
+    return false;
+  }
+}
+
 bool SDCARD::setup() {
   Serial.begin(115200);
   while (!Serial) {
