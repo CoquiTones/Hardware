@@ -1,11 +1,10 @@
 #include "INMP441.h"
-#include "HardwareSerial.h"
+#include "hal/i2s_types.h"
 
 INMP441::INMP441(int pin_sck, int pin_ws, int pin_din)
     : pin_sck(pin_sck), pin_ws(pin_ws), pin_din(pin_din), wav_buffer(nullptr),
-      wav_size(0), sample_rate(SAMPLE_RATE), is_initialized(false),
-      audio_queue(nullptr), recording_task_handle(nullptr),
-      recording_active(false) {}
+      wav_size(0), is_initialized(false), audio_queue(nullptr),
+      recording_task_handle(nullptr), recording_active(false) {}
 
 INMP441::~INMP441() {
   stopContinuousRecording();
@@ -15,16 +14,16 @@ INMP441::~INMP441() {
   }
 }
 
-bool INMP441::begin(uint32_t sr) {
+bool INMP441::init(uint32_t sample_rate) {
   if (is_initialized)
     return true;
 
-  sample_rate = sr;
+  this->sample_rate = sample_rate;
 
   i2s_config_t i2s_config = {
       .mode = (i2s_mode_t)(I2S_MODE_MASTER | I2S_MODE_RX),
       .sample_rate = sample_rate,
-      .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+      .bits_per_sample = I2S_BITS_PER_SAMPLE_16BIT,
       .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
       .communication_format = (i2s_comm_format_t)(I2S_COMM_FORMAT_STAND_I2S),
       .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
@@ -34,7 +33,7 @@ bool INMP441::begin(uint32_t sr) {
       .tx_desc_auto_clear = false,
       .fixed_mclk = 0};
 
-  if (i2s_driver_install(I2S_NUM, &i2s_config, 0, NULL) != ESP_OK) {
+  if (i2s_driver_install(I2S_NUM_0, &i2s_config, 0, NULL) != ESP_OK) {
     Serial.println("I2S driver install failed!");
     return false;
   }
@@ -45,7 +44,7 @@ bool INMP441::begin(uint32_t sr) {
                                  .data_out_num = -1,
                                  .data_in_num = pin_din};
 
-  if (i2s_set_pin(I2S_NUM, &pin_config) != ESP_OK) {
+  if (i2s_set_pin(I2S_NUM_0, &pin_config) != ESP_OK) {
     Serial.println("I2S set pins failed!");
     return false;
   }
@@ -58,7 +57,7 @@ bool INMP441::begin(uint32_t sr) {
 void INMP441::end() {
   stopContinuousRecording();
   if (is_initialized) {
-    i2s_driver_uninstall(I2S_NUM);
+    i2s_driver_uninstall(I2S_NUM_0);
     is_initialized = false;
   }
 }

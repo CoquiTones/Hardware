@@ -1,11 +1,10 @@
-// Microphone.hpp
-#ifndef MICROPHONE_H
-#define MICROPHONE_H
+#ifndef RECORDER_H
+#define RECORDER_H
 
 #include "INMP441.h"
 #include "SDCard.h"
 
-class Microphone {
+class Recorder {
 private:
   SDCARD &sd;
   INMP441 &mic;
@@ -17,8 +16,8 @@ private:
 
 public:
   // Constructor and Destructor
-  Microphone(SDCARD &sd, INMP441 &mic);
-  ~Microphone();
+  Recorder(SDCARD &sd, INMP441 &mic);
+  ~Recorder();
 
   // Setup SD card and microphone
   void initialize();

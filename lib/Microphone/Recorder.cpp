@@ -1,14 +1,14 @@
 // Microphone.cpp
-#include "Microphone.h"
+#include "Recorder.h"
 
-Microphone::Microphone(SDCARD &sd, INMP441 &mic)
+Recorder::Recorder(SDCARD &sd, INMP441 &mic)
     : sd(sd), mic(mic), sd_initialized(false) {}
 
-Microphone::~Microphone() {
+Recorder::~Recorder() {
   // Resources managed by singleton instances
 }
 
-void Microphone::initialize() {
+void Recorder::initialize() {
   sd_initialized = sd.setup();
 
   if (!sd_initialized) {
@@ -24,8 +24,8 @@ void Microphone::initialize() {
   Serial.println("Microphone setup complete");
 }
 
-void Microphone::createWavHeader(uint8_t *header, uint32_t pcm_data_size,
-                                 uint32_t sample_rate) {
+void Recorder::createWavHeader(uint8_t *header, uint32_t pcm_data_size,
+                               uint32_t sample_rate) {
   pcm_wav_header_t wav_header =
       PCM_WAV_HEADER_DEFAULT(pcm_data_size,   // wav_sample_size
                              BITS_PER_SAMPLE, // wav_sample_bits (32-bit)
@@ -36,7 +36,7 @@ void Microphone::createWavHeader(uint8_t *header, uint32_t pcm_data_size,
   memcpy(header, &wav_header, sizeof(pcm_wav_header_t));
 }
 
-const char *Microphone::recordFiveMinutesToFile(const char *fname) {
+const char *Recorder::recordFiveMinutesToFile(const char *fname) {
   static char result_msg[128];
 
   if (!fname || strlen(fname) == 0) {
@@ -170,8 +170,8 @@ const char *Microphone::recordFiveMinutesToFile(const char *fname) {
   return result_msg;
 }
 
-const char *Microphone::recordDurationToFile(const char *fname,
-                                             uint32_t duration_ms) {
+const char *Recorder::recordDurationToFile(const char *fname,
+                                           uint32_t duration_ms) {
   static char result_msg[128];
 
   if (!fname || strlen(fname) == 0) {

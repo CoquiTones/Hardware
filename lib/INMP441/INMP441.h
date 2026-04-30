@@ -2,6 +2,7 @@
 #define INMP441_H
 
 #include "Arduino.h"
+#include "HardwareSerial.h"
 #include "wav_header.h"
 #include <driver/gpio.h>
 #include <driver/i2s.h>
@@ -9,11 +10,6 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <freertos/task.h>
-
-#define I2S_NUM I2S_NUM_0
-#define SAMPLE_RATE 16000
-#define BITS_PER_SAMPLE 32
-#define NUM_CHANNELS 1
 
 // Ring buffer chunk structure
 typedef struct {
@@ -24,12 +20,13 @@ typedef struct {
 
 class INMP441 {
 private:
-  int pin_sck, pin_ws, pin_din;
+  int pin_sck, pin_ws, pin_din, i2s_num;
   uint8_t *wav_buffer;
   uint32_t wav_size;
-  uint32_t sample_rate;
   bool is_initialized;
 
+  const int BITS_PER_SAMPLE = 16;
+  uint32_t sample_rate;
   // Continuous recording members
   QueueHandle_t audio_queue;
   TaskHandle_t recording_task_handle;
@@ -47,7 +44,7 @@ public:
   INMP441(int pin_sck, int pin_ws, int pin_din);
   ~INMP441();
 
-  bool begin(uint32_t sr);
+  bool init(uint32_t sample_rate);
   void end();
 
   // Continuous recording - starts background task

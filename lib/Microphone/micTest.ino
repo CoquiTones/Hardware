@@ -1,7 +1,7 @@
-#include "Microphone.h"
+#include "Recorder.h"
 
-// Create microphone instance
-Microphone microphone;
+// Create Recorder instance
+Recorder recorder;
 
 void setup() {
   // Initialize serial for debugging
@@ -10,11 +10,11 @@ void setup() {
     delay(10);
   }
 
-  Serial.println("\n\n=== INMP441 Microphone Recording Test ===\n");
+  Serial.println("\n\n=== INMP441 Recorder Recording Test ===\n");
 
-  // Initialize microphone and SD card
-  Serial.println("Initializing microphone and SD card...");
-  microphone.setup();
+  // Initialize Recorder and SD card
+  Serial.println("Initializing Recorder and SD card...");
+  recorder.setup();
 
   delay(2000); // Allow time for initialization
 
@@ -23,7 +23,7 @@ void setup() {
   Serial.println("Do not disconnect power or remove SD card!\n");
 
   unsigned long start_time = millis();
-  const char *result = microphone.recordFiveMinutesToFile("/recording.wav");
+  const char *result = recorder.recordFiveMinutesToFile("/recording.wav");
   unsigned long elapsed_time = millis() - start_time;
 
   // Display results
