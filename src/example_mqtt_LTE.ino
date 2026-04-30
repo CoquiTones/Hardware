@@ -13,11 +13,11 @@
 #include <SoftwareSerial.h>
 
 // ==================== PIN DEFINITIONS ====================
-#define PWRKEY 6
-#define RST 7
-#define TX 10   // Microcontroller RX
-#define RX 11   // Microcontroller TX
-#define LED 13
+#define PWRKEY 19
+#define RST 20
+#define TX 47  // Microcontroller RX
+#define RX 48   // Microcontroller TX
+#define LED 10
 
 #define SD_PIN_CS 4
 #define SD_PIN_SCLK 5
